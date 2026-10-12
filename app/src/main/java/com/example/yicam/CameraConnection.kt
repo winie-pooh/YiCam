@@ -1,103 +1,135 @@
+/**
+ * Responsible for: one TCP connection to the camera port: open/close, a reader that turns bytes into JSON objects, serialized writes, connection diagnostics in the log.
+ * Not responsible for: tokens, matching replies to requests, timeouts of commands, reconnect decisions (CameraApi.kt), or finding the Wi-Fi (WifiBinder.kt).
+ */
 package com.example.yicam
 
-import android.net.Network
-import org.json.JSONObject
-import java.io.InputStreamReader
+import java.io.IOException
 import java.net.InetSocketAddress
 import java.net.Socket
-import java.util.concurrent.Executors
-import kotlin.concurrent.thread
+import javax.net.SocketFactory
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-/**
- * v0.0.1 probe connection: one TCP socket to the camera JSON port,
- * a reader thread that splits the stream into JSON objects, and a
- * single writer thread (the camera handles one command at a time).
- *
- * "%TOKEN%" in an outgoing command is replaced by the current session token.
- */
-class CameraConnection(private val log: (String) -> Unit) {
-    private var socket: Socket? = null
-    private val writer = Executors.newSingleThreadExecutor()
+class CameraConnection(
+    private val host: String,
+    private val port: Int,
+    private val socketFactory: SocketFactory,
+    private val scope: CoroutineScope,
+    private val log: TrafficLog,
+    private val connectTimeoutMs: Int = 5_000,
+) {
+    /** Called from the reader thread. Implementations must not block. */
+    interface Listener {
+        /** One complete JSON object received from the camera. */
+        fun onMessage(json: String)
+
+        /** The connection ended without a call to [close] (camera closed it, or a read error). */
+        fun onClosed(cause: Throwable?)
+    }
 
     @Volatile
-    var token: Int = 0
-        private set
+    var listener: Listener? = null
 
-    /** Blocking: call from a background thread. */
-    fun connect(network: Network, host: String, port: Int) {
+    private val writeLock = Any()
+
+    @Volatile
+    private var socket: Socket? = null
+    private var readerJob: Job? = null
+
+    /** Opens a new connection. Any previous socket is closed first. Throws IOException on failure. */
+    suspend fun open() = withContext(Dispatchers.IO) {
         close()
-        val s = network.socketFactory.createSocket()
-        s.connect(InetSocketAddress(host, port), 5000)
-        s.tcpNoDelay = true
-        socket = s
-        thread(isDaemon = true, name = "cam-reader") { readLoop(s) }
-    }
-
-    fun send(template: String) {
-        writer.execute {
-            val s = socket
-            if (s == null || s.isClosed) {
-                log("!! not connected")
-                return@execute
-            }
-            val raw = escapeSlashes(template.replace("%TOKEN%", token.toString()))
-            try {
-                val out = s.getOutputStream()
-                out.write(raw.toByteArray(Charsets.UTF_8))
-                out.flush()
-                log(">> $raw")
-            } catch (e: Exception) {
-                log("!! send failed: $e")
-            }
-        }
-    }
-
-    fun close() {
+        val s = socketFactory.createSocket()
         try {
-            socket?.close()
+            s.tcpNoDelay = true
+            s.keepAlive = true
+            s.connect(InetSocketAddress(host, port), connectTimeoutMs)
         } catch (e: Exception) {
-            // ignore
+            closeQuietly(s)
+            log.sys("[CONN] connect to $host:$port failed: ${e.message ?: e.javaClass.simpleName}")
+            throw if (e is IOException) e else IOException(e.message, e)
         }
+        socket = s
+        log.sys("TCP connected to $host:$port")
+        readerJob = scope.launch(Dispatchers.IO) { readLoop(s) }
+    }
+
+    /** Sends [text] as is. Throws IOException if the connection is not open or the write fails. */
+    suspend fun write(text: String) = withContext(Dispatchers.IO) {
+        val s = socket ?: throw IOException("connection is not open")
+        val bytes = text.toByteArray(Charsets.UTF_8)
+        synchronized(writeLock) {
+            val out = s.getOutputStream()
+            out.write(bytes)
+            out.flush()
+        }
+    }
+
+    /** Closes the socket on purpose. Does not call [Listener.onClosed]. */
+    fun close() {
+        val s = socket
         socket = null
-        token = 0
+        readerJob?.cancel()
+        readerJob = null
+        if (s != null) {
+            closeQuietly(s)
+            log.sys("[CONN] closed by the app")
+        }
     }
 
     private fun readLoop(s: Socket) {
         val parser = JsonStreamParser()
-        val reader = InputStreamReader(s.getInputStream(), Charsets.UTF_8)
-        val buf = CharArray(8192)
+        val buf = ByteArray(8192)
+        var cause: Throwable? = null
         try {
+            val input = s.getInputStream()
             while (true) {
-                val n = reader.read(buf)
+                val n = input.read(buf)
                 if (n < 0) break
-                for (obj in parser.feed(buf, n)) handle(obj)
+                val dropped = parser.droppedObjects
+                for (json in parser.feed(buf, 0, n)) deliver(json)
+                if (parser.droppedObjects != dropped) log.sys("[WARN] oversized message from the camera was dropped")
             }
-            log("-- connection closed by camera")
         } catch (e: Exception) {
-            if (!s.isClosed) log("-- read error: $e")
+            cause = e
+        }
+        if (socket !== s) return // closed on purpose or replaced by a newer connection: stay silent
+        socket = null
+        closeQuietly(s)
+        if (cause == null) {
+            log.sys("[CONN] closed by the camera (end of stream)")
+        } else {
+            log.sys("[CONN] read error: ${cause.message ?: cause.javaClass.simpleName}")
+        }
+        try {
+            listener?.onClosed(cause)
+        } catch (e: Exception) {
+            log.sys("[ERR] listener failed on close: ${e.message}")
         }
     }
 
-    private fun handle(raw: String) {
+    private fun deliver(json: String) {
         try {
-            val json = JSONObject(raw)
-            if (json.optInt("msg_id") == 257 && json.has("param")) {
-                token = json.optInt("param")
-            }
+            listener?.onMessage(json)
         } catch (e: Exception) {
-            // not valid JSON: just log it
+            log.sys("[ERR] failed to handle a message: ${e.message ?: e.javaClass.simpleName}")
         }
-        log("<< " + redact(raw))
+    }
+
+    private fun closeQuietly(s: Socket) {
+        try {
+            s.close()
+        } catch (_: IOException) {
+        }
     }
 
     companion object {
-        /** The camera expects "/" as "\/" (the original PC client does this). */
-        fun escapeSlashes(s: String): String =
-            Regex("(?<!\\\\)/").replace(s, Regex.escapeReplacement("\\/"))
-
-        /** Never put the Wi-Fi password or serial number into logs. */
-        fun redact(s: String): String =
-            Regex("(\"(?:wifi_password|serial_number)\"\\s*:\\s*\")[^\"]*(\")")
-                .replace(s, "$1***$2")
+        /** Camera address and JSON port in the camera's own Wi-Fi. */
+        const val DEFAULT_HOST = "192.168.42.1"
+        const val DEFAULT_PORT = 7878
     }
 }

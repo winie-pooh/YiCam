@@ -1,3 +1,7 @@
+/**
+ * Responsible for: finding the camera's Wi-Fi network (phone address 192.168.42.x) and binding the app process to it.
+ * Not responsible for: opening sockets (CameraConnection.kt) or asking for permissions (MainActivity.kt).
+ */
 package com.example.yicam
 
 import android.content.Context
@@ -6,71 +10,84 @@ import android.net.LinkProperties
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import java.net.Inet4Address
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
-/**
- * Finds the Wi-Fi network the phone is connected to, checks that it is the camera
- * (address 192.168.42.x) and binds the whole app process to it, so traffic does not
- * leak to mobile data when Android sees "Wi-Fi without internet".
- */
-class WifiBinder(context: Context) {
-    private val cm = context.applicationContext.getSystemService(ConnectivityManager::class.java)
+class WifiBinder(context: Context, private val log: TrafficLog) {
+    private val connectivity = context.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+    @Volatile
     private var callback: ConnectivityManager.NetworkCallback? = null
 
-    /** Human readable info about the last found network (for the log). */
-    @Volatile
-    var lastInfo: String = ""
-        private set
-
-    fun bind(onResult: (Result<Network>) -> Unit) {
+    /**
+     * Finds the Wi-Fi network whose phone address starts with 192.168.42., binds the process to it and returns it.
+     * The network stays requested (and bound) until [release] is called.
+     * @throws CameraException.ConnectFailed if no such network appears within [timeoutMs].
+     */
+    suspend fun bind(timeoutMs: Long = 10_000L): Network {
         release()
         val request = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             .build()
-        var delivered = false
-        val cb = object : ConnectivityManager.NetworkCallback() {
-            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-                if (delivered) return
-                val addrs = linkProperties.linkAddresses.mapNotNull { it.address.hostAddress }
-                if (addrs.isEmpty()) return // wait until addresses are known
-                delivered = true
-                lastInfo = "Wi-Fi network found, phone addresses: $addrs"
-                val isCamera = addrs.any { it.startsWith("192.168.42.") }
-                if (!isCamera) {
-                    onResult(Result.failure(IllegalStateException(
-                        "Connected Wi-Fi is not the camera (expected 192.168.42.x)")))
-                    return
-                }
-                if (cm.bindProcessToNetwork(network)) {
-                    onResult(Result.success(network))
-                } else {
-                    onResult(Result.failure(IllegalStateException("bindProcessToNetwork() failed")))
-                }
-            }
+        val found = withTimeoutOrNull(timeoutMs) {
+            suspendCancellableCoroutine<Network> { cont ->
+                val done = AtomicBoolean(false)
+                val cb = object : ConnectivityManager.NetworkCallback() {
+                    override fun onAvailable(network: Network) {
+                        inspect(network, connectivity.getLinkProperties(network))
+                    }
 
-            override fun onUnavailable() {
-                if (delivered) return
-                delivered = true
-                lastInfo = "No Wi-Fi network"
-                onResult(Result.failure(IllegalStateException(
-                    "No Wi-Fi network (timeout). Connect the phone to the camera Wi-Fi first.")))
+                    override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                        inspect(network, linkProperties)
+                    }
+
+                    private fun inspect(network: Network, properties: LinkProperties?) {
+                        if (properties == null || done.get()) return
+                        val addresses = properties.linkAddresses.map { it.address }
+                        val isCamera = addresses.any {
+                            it is Inet4Address && it.hostAddress?.startsWith(CAMERA_ADDRESS_PREFIX) == true
+                        }
+                        if (!isCamera) {
+                            log.sys("[WARN] Wi-Fi network is not the camera's, phone addresses: ${addresses.map { it.hostAddress }}")
+                            return
+                        }
+                        if (!done.compareAndSet(false, true)) return
+                        log.sys("Wi-Fi network found, phone addresses: ${addresses.map { it.hostAddress }}")
+                        connectivity.bindProcessToNetwork(network)
+                        cont.resume(network)
+                    }
+                }
+                callback = cb
+                cont.invokeOnCancellation { release() }
+                connectivity.requestNetwork(request, cb)
             }
         }
-        callback = cb
-        cm.requestNetwork(request, cb, 10_000)
+        return found ?: throw CameraException.ConnectFailed(
+            "Camera Wi-Fi was not found. Connect the phone to the camera's Wi-Fi (YDXJ_...) first, " +
+                "and if Android asks about a network without internet, choose to stay connected.",
+        )
     }
 
+    /** Stops using the camera network: the process goes back to Android's normal routing. */
     fun release() {
-        callback?.let {
+        val cb = callback
+        callback = null
+        try {
+            connectivity.bindProcessToNetwork(null)
+        } catch (_: RuntimeException) {
+        }
+        if (cb != null) {
             try {
-                cm.unregisterNetworkCallback(it)
-            } catch (e: Exception) {
-                // already unregistered
+                connectivity.unregisterNetworkCallback(cb)
+            } catch (_: RuntimeException) {
             }
         }
-        callback = null
     }
 
-    fun unbindProcess() {
-        cm.bindProcessToNetwork(null)
+    private companion object {
+        const val CAMERA_ADDRESS_PREFIX = "192.168.42."
     }
 }
