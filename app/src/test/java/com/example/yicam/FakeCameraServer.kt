@@ -119,6 +119,7 @@ class FakeCameraServer : AutoCloseable {
             }
             rejectEveryCommand || token != validToken -> """{"rval":-4,"msg_id":$msgId}"""
             msgId == 3 -> settings()
+            msgId == 5 -> if (request["type"] == "total") Fixtures.SD_TOTAL_REPLY else Fixtures.SD_FREE_REPLY
             msgId == 13 -> Fixtures.BATTERY_REPLY
             msgId == 1283 -> Fixtures.CHDIR_REPLY
             msgId == 1282 -> Fixtures.LISTING_REPLY

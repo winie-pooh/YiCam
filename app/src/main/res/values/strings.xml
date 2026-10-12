@@ -1,3 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Responsible for: the English texts of the app (default language). Not responsible for: the Spanish and Ukrainian texts (values-es, values-uk) or any code. -->
 <resources>
     <string name="app_name">YiCam</string>
+    <string name="title_status">Camera status</string>
+    <string name="menu_probe">Probe (developer tool)</string>
+    <string name="state_disconnected">Disconnected</string>
+    <string name="state_searching_wifi">Looking for the camera Wi-Fi…</string>
+    <string name="state_permission_required">Local network access is needed</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_reconnecting">Reconnecting (attempt %1$d), next try in %2$d s</string>
+    <string name="state_camera_off">Camera is off or out of range</string>
+    <string name="state_error">Cannot connect</string>
+    <string name="reason_no_wifi">Camera Wi-Fi not found. Connect the phone to the camera Wi-Fi (YDXJ_…) and, if Android warns that there is no internet, stay connected.</string>
+    <string name="reason_not_camera_network">The phone is connected to a Wi-Fi network that is not the camera’s.</string>
+    <string name="reason_permission_denied">Local network access was denied. Allow it in the app settings.</string>
+    <string name="reason_timeout">The camera did not answer in time.</string>
+    <string name="reason_connection_lost">The connection to the camera was lost.</string>
+    <string name="reason_protocol">The camera sent an unexpected reply.</string>
+    <string name="label_battery">Battery</string>
+    <string name="label_charging">Charging</string>
+    <string name="label_sd">SD card</string>
+    <string name="label_mode">Camera mode</string>
+    <string name="battery_value">%1$d%%</string>
+    <string name="sd_free_of_total">%1$s free of %2$s</string>
+    <string name="button_connect">Connect</string>
+    <string name="button_disconnect">Disconnect</string>
+    <string name="button_refresh">Refresh</string>
+    <string name="button_open_settings">Open app settings</string>
+    <string name="title_settings_snapshot">Camera settings (read only)</string>
+    <string name="no_data_yet">No data yet</string>
 </resources>

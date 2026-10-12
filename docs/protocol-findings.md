@@ -48,4 +48,5 @@ The camera Wi-Fi gives the phone 192.168.42.2; the camera is 192.168.42.1, JSON 
 - The next run was normal. Cause unknown. If it happens again, save the log from Connect on.
 
 ## Not yet verified
+Whether polling (battery every 20 s) keeps the camera awake with auto_power_off = 3 minutes; how fast Android reports the loss of the camera Wi-Fi after the camera is switched off; what a socket error looks like on Android 17 without the local network permission; whether `type: adapter` in the reply of msg_id 13 means the charger is connected (0.0.3 assumes so); whether app_status changes are visible without re-reading msg_id 3 (0.0.3 reads it on connect and on Refresh only).
 Token lifetime after idle; preview during recording; zoom command rate; `.THM` format; EXIF thumbnails in camera photos (plan section 11.4).

@@ -1,6 +1,6 @@
 /**
  * Responsible for: the camera session: connect/reconnect, the session token, one command in flight at a time, reply matching by msg_id, timeouts, one automatic token refresh on rval -4, and the stream of camera events.
- * Not responsible for: sockets and framing (CameraConnection.kt), UI, Wi-Fi binding, or the meaning of individual commands' replies (later versions).
+ * Not responsible for: sockets and framing (CameraConnection.kt), UI, Wi-Fi binding, background reconnecting and polling (CameraSession.kt), or the meaning of individual commands' replies (StatusParser.kt).
  */
 package com.example.yicam
 
@@ -20,7 +20,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * @param autoReconnect if a command is sent while the connection is lost (and not closed by [disconnect]),
- * reconnect once and send it. Exponential back-off reconnect in the background comes in 0.0.3.
+ * reconnect once and send it. Background reconnect with growing delays lives in CameraSession, which creates this class with autoReconnect = false.
  */
 class CameraApi(
     private val connection: CameraConnection,

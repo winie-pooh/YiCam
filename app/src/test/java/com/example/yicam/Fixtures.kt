@@ -1,5 +1,5 @@
 /**
- * Responsible for: real camera messages copied from phone logs of 2026-10-12 (YDXJ firmware 1.3.0), used as test data.
+ * Responsible for: real camera messages copied from camera logs of 2026-10-12 (YDXJ firmware 1.3.0), plus small helpers that build a message of the same shape; used as test data.
  * Not responsible for: any test logic.
  */
 package com.example.yicam
@@ -18,6 +18,15 @@ object Fixtures {
 
     /** Battery event: note the space before the comma. */
     const val BATTERY_EVENT = """{ "msg_id": 7, "type": "battery" ,"param":"82"}"""
+
+    /** msg_id 5 replies for type total / free, in kilobytes (real values of the camera's 32 GB card). */
+    const val SD_TOTAL_REPLY = """{ "rval": 0, "msg_id": 5, "param": 30317536 }"""
+    const val SD_FREE_REPLY = """{ "rval": 0, "msg_id": 5, "param": 20959840 }"""
+    const val SD_TOTAL_KB = 30317536L
+    const val SD_FREE_KB = 20959840L
+
+    /** Battery event with the given level, in the camera's own spacing. */
+    fun batteryEvent(percent: Int): String = """{ "msg_id": 7, "type": "battery" ,"param":"$percent"}"""
 
     const val VF_START_EVENT = """{ "msg_id": 7, "type": "vf_start" }"""
 

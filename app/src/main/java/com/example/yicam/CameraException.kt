@@ -1,6 +1,6 @@
 /**
  * Responsible for: the error types of camera communication.
- * Not responsible for: deciding when they are thrown (CameraApi.kt, CameraConnection.kt) or how they are shown (UI).
+ * Not responsible for: deciding when they are thrown (CameraApi.kt, CameraConnection.kt, WifiBinder.kt) or how they are shown (UI).
  */
 package com.example.yicam
 
@@ -8,7 +8,10 @@ sealed class CameraException(message: String, cause: Throwable? = null) : Except
     /** No open session and automatic reconnect is off or the user disconnected on purpose. */
     class NotConnected : CameraException("Not connected to the camera")
 
-    /** TCP connect or Wi-Fi lookup failed. */
+    /** No Wi-Fi network with a 192.168.42.x address appeared. [otherWifiSeen] is true when the phone is on some other Wi-Fi. */
+    class WifiNotFound(val otherWifiSeen: Boolean, message: String) : CameraException(message)
+
+    /** TCP connect failed. */
     class ConnectFailed(message: String, cause: Throwable? = null) : CameraException(message, cause)
 
     /** The socket closed or failed while a command was in flight. */

@@ -1,6 +1,6 @@
 /**
  * Responsible for: one TCP connection to the camera port: open/close, a reader that turns bytes into JSON objects, serialized writes, connection diagnostics in the log.
- * Not responsible for: tokens, matching replies to requests, timeouts of commands, reconnect decisions (CameraApi.kt), or finding the Wi-Fi (WifiBinder.kt).
+ * Not responsible for: tokens, matching replies to requests, timeouts of commands, reconnect decisions (CameraApi.kt, CameraSession.kt), or finding the Wi-Fi (WifiBinder.kt).
  */
 package com.example.yicam
 

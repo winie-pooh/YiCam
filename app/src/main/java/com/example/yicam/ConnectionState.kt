@@ -1,6 +1,6 @@
 /**
- * Responsible for: the possible states of the camera connection, as shown to the UI.
- * Not responsible for: changing the state (CameraApi.kt does that).
+ * Responsible for: the low-level state of one CameraApi connection (Disconnected, Connecting, Connected with token, Failed).
+ * Not responsible for: the state shown to the user (SessionState.kt) or changing the state (CameraApi.kt does that).
  */
 package com.example.yicam
 
