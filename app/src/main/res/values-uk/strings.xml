@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Responsible for: the Ukrainian texts of the app. Not responsible for: the English default texts (values) or the Spanish texts (values-es). -->
+<resources>
+    <string name="title_status">Стан камери</string>
+    <string name="menu_probe">Зонд (інструмент розробника)</string>
+    <string name="state_disconnected">Відключено</string>
+    <string name="state_searching_wifi">Шукаю Wi-Fi камери…</string>
+    <string name="state_permission_required">Потрібен доступ до локальної мережі</string>
+    <string name="state_connecting">Підключення…</string>
+    <string name="state_connected">Підключено</string>
+    <string name="state_reconnecting">Перепідключення (спроба %1$d), наступна через %2$d с</string>
+    <string name="state_camera_off">Камера вимкнена або поза зоною</string>
+    <string name="state_error">Не вдається підключитися</string>
+    <string name="reason_no_wifi">Wi-Fi камери не знайдено. Підключіть телефон до Wi-Fi камери (YDXJ_…) і, якщо Android попереджає про відсутність інтернету, залиште зʼєднання.</string>
+    <string name="reason_not_camera_network">Телефон підключено до іншої Wi-Fi мережі, не до камери.</string>
+    <string name="reason_permission_denied">Доступ до локальної мережі відхилено. Дозвольте його в налаштуваннях застосунку.</string>
+    <string name="reason_timeout">Камера не відповіла вчасно.</string>
+    <string name="reason_connection_lost">Зʼєднання з камерою втрачено.</string>
+    <string name="reason_protocol">Камера надіслала неочікувану відповідь.</string>
+    <string name="label_battery">Батарея</string>
+    <string name="label_charging">Заряджається</string>
+    <string name="label_sd">SD-карта</string>
+    <string name="label_mode">Режим камери</string>
+    <string name="battery_value">%1$d%%</string>
+    <string name="sd_free_of_total">Вільно %1$s з %2$s</string>
+    <string name="sd_not_usable">Непридатна: камера повідомляє лише %1$s</string>
+    <string name="button_connect">Підключити</string>
+    <string name="button_disconnect">Відключити</string>
+    <string name="button_refresh">Оновити</string>
+    <string name="button_open_settings">Відкрити налаштування застосунку</string>
+    <string name="title_settings_snapshot">Налаштування камери (лише читання)</string>
+    <string name="no_data_yet">Даних ще немає</string>
+</resources>

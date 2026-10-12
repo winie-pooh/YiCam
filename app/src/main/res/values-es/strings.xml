@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Responsible for: the Spanish texts of the app. Not responsible for: the English default texts (values) or the Ukrainian texts (values-uk). -->
+<resources>
+    <string name="title_status">Estado de la cámara</string>
+    <string name="menu_probe">Sonda (herramienta de desarrollo)</string>
+    <string name="state_disconnected">Desconectado</string>
+    <string name="state_searching_wifi">Buscando el Wi-Fi de la cámara…</string>
+    <string name="state_permission_required">Se necesita acceso a la red local</string>
+    <string name="state_connecting">Conectando…</string>
+    <string name="state_connected">Conectado</string>
+    <string name="state_reconnecting">Reconectando (intento %1$d), próximo intento en %2$d s</string>
+    <string name="state_camera_off">La cámara está apagada o fuera de alcance</string>
+    <string name="state_error">No se puede conectar</string>
+    <string name="reason_no_wifi">No se encuentra el Wi-Fi de la cámara. Conecta el teléfono al Wi-Fi de la cámara (YDXJ_…) y, si Android avisa de que no hay internet, mantén la conexión.</string>
+    <string name="reason_not_camera_network">El teléfono está conectado a una red Wi-Fi que no es la de la cámara.</string>
+    <string name="reason_permission_denied">Se denegó el acceso a la red local. Permítelo en los ajustes de la aplicación.</string>
+    <string name="reason_timeout">La cámara no respondió a tiempo.</string>
+    <string name="reason_connection_lost">Se perdió la conexión con la cámara.</string>
+    <string name="reason_protocol">La cámara envió una respuesta inesperada.</string>
+    <string name="label_battery">Batería</string>
+    <string name="label_charging">Cargando</string>
+    <string name="label_sd">Tarjeta SD</string>
+    <string name="label_mode">Modo de la cámara</string>
+    <string name="battery_value">%1$d%%</string>
+    <string name="sd_free_of_total">%1$s libres de %2$s</string>
+    <string name="sd_not_usable">No utilizable: la cámara solo informa de %1$s</string>
+    <string name="button_connect">Conectar</string>
+    <string name="button_disconnect">Desconectar</string>
+    <string name="button_refresh">Actualizar</string>
+    <string name="button_open_settings">Abrir ajustes de la aplicación</string>
+    <string name="title_settings_snapshot">Ajustes de la cámara (solo lectura)</string>
+    <string name="no_data_yet">Todavía no hay datos</string>
+</resources>
