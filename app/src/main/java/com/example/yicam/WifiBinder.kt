@@ -48,6 +48,7 @@ class WifiBinder(context: Context, private val log: TrafficLog) : CameraNetwork 
         val found = withTimeoutOrNull(timeoutMs) {
             suspendCancellableCoroutine<Network> { cont ->
                 val done = AtomicBoolean(false)
+                val lastWarned = java.util.concurrent.atomic.AtomicReference<String?>(null)
                 val cb = object : ConnectivityManager.NetworkCallback() {
                     override fun onAvailable(network: Network) {
                         inspect(network, connectivity.getLinkProperties(network))
@@ -73,7 +74,10 @@ class WifiBinder(context: Context, private val log: TrafficLog) : CameraNetwork 
                         }
                         if (!isCamera) {
                             otherWifiSeen.set(true)
-                            log.sys("[WARN] Wi-Fi network is not the camera's, phone addresses: ${addresses.map { it.hostAddress }}")
+                            val text = addresses.map { it.hostAddress }.toString()
+                            if (lastWarned.getAndSet(text) != text) {
+                                log.sys("[WARN] Wi-Fi network is not the camera's, phone addresses: $text")
+                            }
                             return
                         }
                         if (!done.compareAndSet(false, true)) return

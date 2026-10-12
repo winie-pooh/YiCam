@@ -43,6 +43,15 @@ The camera Wi-Fi gives the phone 192.168.42.2; the camera is 192.168.42.1, JSON 
 - Dates are unreliable: the camera clock was 2008-03-23, while some folders carry 2024/2025 dates.
 - Folder contents (files) were not seen in the phone probe; see plan section 11.1 for the PC probe results.
 
+## SD card size (phone log of 2026-10-12, Android 17, v0.0.3)
+- First connection: msg_id 5 type total gave 17490, type free gave 17414 (kilobytes), the same again 30 s later, while the settings said sd_card_status "insert" and sdcard_need_format "no-need".
+- After the camera Wi-Fi was lost and the phone reconnected (camera clock continued without a reset: 07:19 to 07:21), the answers were total 30317536 and free 20959712 (a 32 GB card, 28.9 GiB).
+- So the camera can report a tiny "card" of about 17 MB while sd_card_status still says insert. Cause not known (no card, a different card, or a card that was not mounted yet). The app does not show such a size as a card.
+- Android 17 phone: the camera network was found, bound and used for TCP without any extra step visible in the log.
+
+## Camera Wi-Fi loss seen from the phone
+- The phone reported the loss of the camera network at 21:09:30.876, 0.4 s after the last battery reply; the app showed "camera off" 6.2 s later.
+
 ## Camera freeze (incident)
 - In the first phone run the camera answered the first Settings request and then stopped answering anything; its own buttons did not react either. The app showed nothing about it (fixed in 0.0.2: timeouts and connection events are logged).
 - The next run was normal. Cause unknown. If it happens again, save the log from Connect on.

@@ -24,6 +24,7 @@
     <string name="label_mode">Camera mode</string>
     <string name="battery_value">%1$d%%</string>
     <string name="sd_free_of_total">%1$s free of %2$s</string>
+    <string name="sd_not_usable">Not usable: the camera reports only %1$s</string>
     <string name="button_connect">Connect</string>
     <string name="button_disconnect">Disconnect</string>
     <string name="button_refresh">Refresh</string>

@@ -23,6 +23,11 @@ object Fixtures {
     const val SD_TOTAL_REPLY = """{ "rval": 0, "msg_id": 5, "param": 30317536 }"""
     const val SD_FREE_REPLY = """{ "rval": 0, "msg_id": 5, "param": 20959840 }"""
     const val SD_TOTAL_KB = 30317536L
+
+    /** What the camera answered on the first phone run, while it still reported a card slot: about 17 MB. */
+    const val SMALL_SD_TOTAL_REPLY = """{ "rval": 0, "msg_id": 5, "param": 17490 }"""
+    const val SMALL_SD_FREE_REPLY = """{ "rval": 0, "msg_id": 5, "param": 17414 }"""
+    const val SMALL_SD_TOTAL_KB = 17490L
     const val SD_FREE_KB = 20959840L
 
     /** Battery event with the given level, in the camera's own spacing. */

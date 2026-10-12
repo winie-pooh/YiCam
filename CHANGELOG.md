@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.0.3.1 - fixes after the first phone run of 0.0.3 (Android 17)
+- SD card: on the first connection the camera itself answered total 17490 KB / free 17414 KB (a 17 MB "card") although sd_card_status was "insert"; on the next connection it answered 30317536 / 20959712. The app showed exactly what the camera said. Now a total below 512 MB (Config.minPlausibleSdKb) is not shown as a card: the status says "Not usable: the camera reports only 17.9 MB" and the SD size is read again every 5 s (12 times, then every 60 s) until it looks real. New field CameraStatus.sdUnusableReportedKb; new string sd_not_usable (EN, ES, UK).
+- CameraOff: after the first (short) attempt there was a blind pause of about 25 s in which a returning Wi-Fi was not noticed. Now the pause is 1 s and the next attempt itself waits up to 30 s for the Wi-Fi, so recovery is immediate; an attempt that fails at once still waits 30 s so it cannot spin.
+- After a loss, "the phone is on another Wi-Fi" is no longer final (the phone falls back to the home Wi-Fi when the camera Wi-Fi goes away): the session keeps waiting. Before the first successful connection it is still an error. This differs from the 0.0.3 brief.
+- WifiBinder logs the "not the camera's Wi-Fi" warning once per address list instead of twice.
+- Tests: tinyCardSize_isNotShownAsACard_andIsCheckedAgainUntilItIsReal, afterALoss_anotherWifi_isNotFinal_theSessionKeepsWaiting; FakeCameraServer got tinySd, Fixtures got the real small-card replies.
+
 ## 0.0.3 - camera status and a link that repairs itself
 - CameraSession (new): owns the link to the camera for the whole app. Finds the camera Wi-Fi, opens the session, reads settings (3), battery (13) and SD memory (5 total/free), then polls battery every 20 s and free space every 60 s; battery events (msg_id 7) update the level at once. Polling and reconnect attempts wait while the app is in the background (MainActivity onStop/onStart).
 - Reconnect: delays 1, 2, 4, 8, 16, 30 s (+-20 %, Backoff.kt). A lost socket, a second timeout in a row, or a lost Wi-Fi network ends the link and starts a new attempt. If the camera Wi-Fi does not come back within 5 s the state becomes CameraOff and the app waits for the Wi-Fi (one attempt per 30 s, instant reaction when the Wi-Fi returns).

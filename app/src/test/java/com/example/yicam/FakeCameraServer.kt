@@ -26,6 +26,7 @@ class FakeCameraServer : AutoCloseable {
     @Volatile var neverAnswer: Set<Int> = emptySet()
     @Volatile var rejectEveryCommand = false
     @Volatile var leakSecrets = false
+    @Volatile var tinySd = false
     @Volatile var sawOverlap = false
 
     private val nextToken = AtomicInteger(1)
@@ -119,7 +120,7 @@ class FakeCameraServer : AutoCloseable {
             }
             rejectEveryCommand || token != validToken -> """{"rval":-4,"msg_id":$msgId}"""
             msgId == 3 -> settings()
-            msgId == 5 -> if (request["type"] == "total") Fixtures.SD_TOTAL_REPLY else Fixtures.SD_FREE_REPLY
+            msgId == 5 -> sdReply(request["type"] == "total")
             msgId == 13 -> Fixtures.BATTERY_REPLY
             msgId == 1283 -> Fixtures.CHDIR_REPLY
             msgId == 1282 -> Fixtures.LISTING_REPLY
@@ -132,6 +133,13 @@ class FakeCameraServer : AutoCloseable {
             Thread.sleep(60)
             write(s, Fixtures.VF_START_EVENT)
         }
+    }
+
+    private fun sdReply(total: Boolean): String = when {
+        tinySd && total -> Fixtures.SMALL_SD_TOTAL_REPLY
+        tinySd -> Fixtures.SMALL_SD_FREE_REPLY
+        total -> Fixtures.SD_TOTAL_REPLY
+        else -> Fixtures.SD_FREE_REPLY
     }
 
     private fun settings(): String =
