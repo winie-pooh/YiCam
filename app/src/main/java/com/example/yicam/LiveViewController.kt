@@ -1,5 +1,5 @@
 /**
- * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream, waiting for the first picture, retrying, and restarting a stream that breaks.
+ * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream (UDP: the camera refuses TCP), waiting for the first picture, noticing a frozen or ended stream or a lost link, pausing when the camera starts recording and resuming after it, retrying, and restarting a stream that breaks.
  * Not responsible for: the video decoding itself (StreamPlayer.kt, ExoRtspPlayer.kt), drawing (LiveScreen.kt) or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -12,6 +12,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -24,17 +25,42 @@ class LiveViewController(
 ) {
     data class Config(
         val rtspUrl: String = "rtsp://192.168.42.1:554/live",
+        /** The camera answers "SETUP 461" to RTP over TCP (seen on a phone), so UDP is the default. */
+        val useTcp: Boolean = false,
         /** Tries in a row before giving up (a stream that played and then broke starts counting again). */
         val maxStartAttempts: Int = 2,
         val retryDelayMs: Long = 1_500L,
         val firstFrameTimeoutMs: Long = 12_000L,
+        /** The picture counts as frozen when the player buffers this long without data. */
+        val stallTimeoutMs: Long = 5_000L,
+        /** After the camera stopped its preview (recording), how long to wait for it to come back before giving up. */
+        val resumeWaitMs: Long = 300_000L,
     )
 
     private sealed interface StreamEvent {
         data object FirstFrame : StreamEvent
 
+        data object Buffering : StreamEvent
+
+        data object Ready : StreamEvent
+
+        data object Ended : StreamEvent
+
+        data object LinkLost : StreamEvent
+
+        /** The camera ended its preview (vf_stop) or started recording: the RTSP session is dead and must be closed. */
+        data object PreviewStopped : StreamEvent
+
         data class Failed(val message: String) : StreamEvent
     }
+
+    private class Outcome(
+        val message: String,
+        val timedOut: Boolean,
+        val linkLost: Boolean,
+        val played: Boolean,
+        val previewStopped: Boolean = false,
+    )
 
     private val _state = MutableStateFlow<LiveState>(LiveState.Idle)
     val state: StateFlow<LiveState> = _state.asStateFlow()
@@ -83,55 +109,128 @@ class LiveViewController(
                 return
             }
             if (!reply.isOk) {
-                fail(LiveProblem.PREVIEW_COMMAND_FAILED, "the camera answered rval ${reply.rval}")
+                if (reply.rval == RVAL_BUSY) {
+                    // Seen on a phone: -21 came every time the camera was recording a video.
+                    fail(LiveProblem.RECORDING, "the camera answered rval $RVAL_BUSY (busy; it was recording when this was seen)")
+                } else {
+                    fail(LiveProblem.PREVIEW_COMMAND_FAILED, "the camera answered rval ${reply.rval}")
+                }
                 return
             }
 
             _state.value = LiveState.ConnectingStream
             val events = Channel<StreamEvent>(Channel.UNLIMITED)
-            // First attempt: RTP over TCP. Second attempt: let the player choose (UDP first), in case the camera dislikes TCP.
-            val useTcp = attempt % 2 == 1
-            log("starting the stream (attempt $attempt, ${if (useTcp) "TCP" else "player's choice"})")
-            player.start(
-                config.rtspUrl,
-                object : StreamPlayer.Listener {
-                    override fun onFirstFrame() {
-                        events.trySend(StreamEvent.FirstFrame)
+            val linkWatcher = scope.launch {
+                session.state.first { it !is SessionState.Connected }
+                events.trySend(StreamEvent.LinkLost)
+            }
+            val eventWatcher = scope.launch {
+                session.cameraEvents.collect { event ->
+                    if (event.type == "vf_stop" || event.type == "start_video_record") {
+                        events.trySend(StreamEvent.PreviewStopped)
                     }
-
-                    override fun onError(message: String) {
-                        events.trySend(StreamEvent.Failed(message))
-                    }
-                },
-                useTcp,
-            )
-
-            val first = withTimeoutOrNull(config.firstFrameTimeoutMs) { events.receive() }
-            var failure = ""
-            var timedOut = false
-            when (first) {
-                StreamEvent.FirstFrame -> {
-                    val tookMs = nowMs() - startedMs
-                    log("first picture after $tookMs ms (preview command included)")
-                    _state.value = LiveState.Playing(tookMs)
-                    attempt = 0
-                    // Wait here until the stream breaks (or the job is cancelled by stop()).
-                    val next = events.receive()
-                    failure = (next as? StreamEvent.Failed)?.message ?: "the stream ended"
-                }
-                is StreamEvent.Failed -> failure = first.message
-                null -> {
-                    timedOut = true
-                    failure = "no picture within ${config.firstFrameTimeoutMs} ms"
                 }
             }
+            val outcome = try {
+                log("starting the stream (attempt $attempt, ${if (config.useTcp) "TCP" else "UDP"})")
+                player.start(
+                    config.rtspUrl,
+                    object : StreamPlayer.Listener {
+                        override fun onFirstFrame() {
+                            events.trySend(StreamEvent.FirstFrame)
+                        }
+
+                        override fun onBuffering(buffering: Boolean) {
+                            events.trySend(if (buffering) StreamEvent.Buffering else StreamEvent.Ready)
+                        }
+
+                        override fun onEnded() {
+                            events.trySend(StreamEvent.Ended)
+                        }
+
+                        override fun onError(message: String) {
+                            events.trySend(StreamEvent.Failed(message))
+                        }
+                    },
+                    config.useTcp,
+                )
+                awaitOutcome(events, startedMs)
+            } finally {
+                linkWatcher.cancel()
+                eventWatcher.cancel()
+            }
+
             player.stop()
-            log("stream stopped: $failure")
+            log("stream stopped: ${outcome.message}")
+            if (outcome.linkLost) {
+                fail(LiveProblem.NOT_CONNECTED, outcome.message)
+                return
+            }
+            if (outcome.previewStopped) {
+                // Seen on a phone: when a recording ended while the player was still connected, the camera Wi-Fi vanished
+                // within about 20-40 s. So the RTSP session is closed now (player.stop() above) and the stream is
+                // started again only after the camera announces vf_start.
+                fail(LiveProblem.RECORDING, outcome.message)
+                val resumed = withTimeoutOrNull(config.resumeWaitMs) {
+                    session.cameraEvents.first { it.type == "vf_start" }
+                }
+                if (resumed == null) return
+                log("the camera announced vf_start, resuming")
+                attempt = 0
+                delay(config.retryDelayMs)
+                continue
+            }
+            if (outcome.played) attempt = 0
             if (attempt >= config.maxStartAttempts) {
-                fail(if (timedOut) LiveProblem.STREAM_TIMEOUT else LiveProblem.STREAM_FAILED, failure)
+                fail(if (outcome.timedOut) LiveProblem.STREAM_TIMEOUT else LiveProblem.STREAM_FAILED, outcome.message)
                 return
             }
             delay(config.retryDelayMs)
+        }
+    }
+
+    /** Waits for the first picture, then watches the stream until it fails, ends, freezes or the link is lost. */
+    private suspend fun awaitOutcome(events: Channel<StreamEvent>, startedMs: Long): Outcome {
+        val firstFrameDeadlineMs = nowMs() + config.firstFrameTimeoutMs
+        var playing = false
+        var buffering = false
+        while (true) {
+            val waitMs = when {
+                !playing -> firstFrameDeadlineMs - nowMs()
+                buffering -> config.stallTimeoutMs
+                else -> -1L
+            }
+            val event: StreamEvent? = if (waitMs < 0L) {
+                events.receive()
+            } else {
+                withTimeoutOrNull(waitMs) { events.receive() }
+            }
+            when (event) {
+                null -> return if (playing) {
+                    Outcome("the picture froze: no data for ${config.stallTimeoutMs} ms", timedOut = false, linkLost = false, played = true)
+                } else {
+                    Outcome("no picture within ${config.firstFrameTimeoutMs} ms", timedOut = true, linkLost = false, played = false)
+                }
+                StreamEvent.FirstFrame -> {
+                    playing = true
+                    buffering = false
+                    val tookMs = nowMs() - startedMs
+                    log("first picture after $tookMs ms (preview command included)")
+                    _state.value = LiveState.Playing(tookMs)
+                }
+                StreamEvent.Buffering -> if (playing) buffering = true
+                StreamEvent.Ready -> buffering = false
+                StreamEvent.Ended -> return Outcome("the stream ended", timedOut = false, linkLost = false, played = playing)
+                StreamEvent.LinkLost -> return Outcome("the link to the camera was lost", timedOut = false, linkLost = true, played = playing)
+                StreamEvent.PreviewStopped -> return Outcome(
+                    "the camera stopped the preview (a recording started)",
+                    timedOut = false,
+                    linkLost = false,
+                    played = playing,
+                    previewStopped = true,
+                )
+                is StreamEvent.Failed -> return Outcome(event.message, timedOut = false, linkLost = false, played = playing)
+            }
         }
     }
 
@@ -150,4 +249,9 @@ class LiveViewController(
     private fun log(text: String) = session.log.sys("[LIVE] $text")
 
     private fun nowMs(): Long = System.nanoTime() / 1_000_000L
+
+    private companion object {
+        /** The answer of msg_id 259 while the camera is recording (seen twice). */
+        const val RVAL_BUSY = -21
+    }
 }

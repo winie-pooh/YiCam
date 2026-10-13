@@ -31,6 +31,14 @@ class FakeStreamPlayer : StreamPlayer {
         listener?.onFirstFrame()
     }
 
+    fun emitBuffering(buffering: Boolean) {
+        listener?.onBuffering(buffering)
+    }
+
+    fun emitEnded() {
+        listener?.onEnded()
+    }
+
     fun emitError(message: String) {
         listener?.onError(message)
     }

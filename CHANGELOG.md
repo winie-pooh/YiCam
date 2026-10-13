@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.1.3 - recording while the live view is open
+- User account of the two Wi-Fi losses: the camera had been left alone for about 3 minutes, then a recording was started and stopped while the live view was open. The log agrees: both times the camera Wi-Fi vanished 20-40 s after video_record_complete, with the RTSP session still open on the phone (the preview stops with vf_stop when the recording starts, and the old controller never closed the session). The cause is not proven.
+- Now: when the camera sends vf_stop or start_video_record, the player is closed at once (the RTSP session ends cleanly), the screen shows "not available while the camera is recording", and the stream is started again by itself 1.5 s after the camera sends vf_start (waits up to 5 minutes).
+- CameraSession.cameraEvents (new): every message the camera sends on its own is available to screens.
+- Test: recordingStartsWhilePlaying_closesThePlayer_andResumesAfterTheCameraIsBack. Test plan: new check M11 (English and Ukrainian). Not compiled or run here.
+
+## 0.1.2 - fixes after the first live view test on a phone (Android 17)
+- The camera answers "SETUP 461" (unsupported transport) to RTP over TCP, on every attempt; UDP works and the first picture came 0.5-0.7 s after the preview command. The stream now starts with UDP at once (LiveViewController.Config.useTcp = false), so the useless first attempt and the 1.5 s retry pause are gone.
+- A frozen picture was left on screen when the camera stopped sending: the player stayed in BUFFERING and later ended, and nothing reacted. Now: the player's "buffering" and "ended" are passed on (StreamPlayer.Listener.onBuffering/onEnded); buffering for 5 s without data counts as a frozen picture and the stream is restarted; a stream that ends is restarted; a lost link to the camera stops the live view at once with "the camera is not connected".
+- msg_id 259 answered rval -21 whenever the camera was recording (seen twice). It is now shown as "not available while recording" instead of "the camera did not start the preview".
+- CameraSession reads the settings again 0.7 s after any camera event other than battery (start_video_record, vf_stop, video_record_complete, vf_start, switch_to_cap_mode, switch_to_rec_mode), so the camera mode on the status screen and the "recording" check are no longer stale.
+- Tests added: streams start without forced TCP; camera busy (-21) is shown as recording; a frozen picture is restarted; short buffering pauses are ignored; an ended stream is restarted; a lost link stops the live view; a camera event refreshes the mode. Not compiled or run here.
+
 ## 0.1.1 - the first live view run on a phone failed with "ERROR_CODE_IO_UNSPECIFIED: Source error"
 - That message is Media3's generic wrapper; the real reason was hidden. Now the player error shows the whole chain of causes (on screen and as a [LIVE] log line).
 - The second start attempt no longer forces RTP over TCP: the player chooses the transport itself (UDP first). The first attempt still uses TCP. Both are logged.

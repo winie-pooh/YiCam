@@ -46,6 +46,11 @@ class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) :
         exo.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
                 log.sys("[LIVE] player state ${stateName(playbackState)}")
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> listener.onBuffering(true)
+                    Player.STATE_READY -> listener.onBuffering(false)
+                    Player.STATE_ENDED -> listener.onEnded()
+                }
             }
 
             override fun onVideoSizeChanged(videoSize: VideoSize) {

@@ -54,6 +54,7 @@ class CameraSessionTest {
                 pollBatteryMs = pollBatteryMs,
                 pollSdMs = pollSdMs,
                 sdRecheckMs = 50L,
+                eventRefreshDelayMs = 50L,
                 wifiTimeoutMs = 200L,
                 wifiGraceMs = 80L,
                 cameraOffRetryMs = 150L,
@@ -117,6 +118,15 @@ class CameraSessionTest {
         connectAndWaitForStatus()
         server.pushEvent(Fixtures.batteryEvent(55))
         waitUntil("level 55") { session.status.value.batteryPercent == 55 }
+    }
+
+    @Test
+    fun aCameraEvent_makesTheSessionReadTheModeAgain() = test {
+        connectAndWaitForStatus()
+        assertEquals("idle", session.status.value.appStatus)
+        server.appStatus = "recording"
+        server.pushEvent("""{ "msg_id": 7, "type": "start_video_record" }""")
+        waitUntil("mode updated") { session.status.value.appStatus == "recording" }
     }
 
     @Test

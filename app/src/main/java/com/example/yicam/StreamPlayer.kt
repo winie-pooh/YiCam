@@ -9,6 +9,12 @@ interface StreamPlayer {
         /** The first video frame was drawn. */
         fun onFirstFrame()
 
+        /** The player started or stopped waiting for data. Many short periods are normal; a long one means a frozen picture. */
+        fun onBuffering(buffering: Boolean) {}
+
+        /** The stream ended (for example the camera stopped sending). */
+        fun onEnded() {}
+
         /** The stream failed or ended; [message] is English text for the log. */
         fun onError(message: String)
     }

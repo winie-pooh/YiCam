@@ -26,6 +26,7 @@ Nothing in 0.1.0 has been compiled or run by the author (no Kotlin compiler wher
 | M8 | Switch the camera off while playing | Picture stops; a problem text appears; no crash | What the screen and the log said |
 | M9 | Start a video recording with the camera's own button, then open Live view | Message "not available while recording" (or a picture - write down which) | The app_status value in the log |
 | M10 | Open Live view with the camera in photo mode | Works or a clear message | Result |
+| M11 | With the live view playing, start a recording with the camera's own button, wait 10 s, stop it | The screen says it is not available while recording, the stream comes back by itself a few seconds after the recording ends, the camera Wi-Fi stays up | Did it resume? Did the Wi-Fi vanish again? |
 
 ## If the picture does not appear
 1. Read the technical line under the picture: it now shows the whole chain of causes (for example `RtspPlaybackException <- ... <- SocketException: ...`), not only "Source error". The first attempt uses RTP over TCP, the second lets the player choose (UDP first); both are written to the log as `[LIVE]` lines.

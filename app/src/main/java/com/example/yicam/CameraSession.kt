@@ -15,7 +15,11 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -52,6 +56,8 @@ class CameraSession(
         val cameraOffRetryMs: Long = 30_000L,
         /** Smallest pause between two attempts while the camera is off, so a failing attempt can never spin. */
         val minAttemptGapMs: Long = 1_000L,
+        /** After a camera event (record started, mode switched, ...) the settings are read again, so app_status is not stale. */
+        val eventRefreshDelayMs: Long = 700L,
         val backoff: Backoff = Backoff(),
     )
 
@@ -60,6 +66,7 @@ class CameraSession(
     private val _settings = MutableStateFlow<SettingsSnapshot?>(null)
     private val foreground = MutableStateFlow(true)
     private val refreshRequests = Channel<Unit>(Channel.CONFLATED)
+    private val settingsRequests = Channel<Unit>(Channel.CONFLATED)
     private val consecutiveTimeouts = AtomicInteger(0)
 
     @Volatile
@@ -67,6 +74,11 @@ class CameraSession(
 
     @Volatile
     private var api: CameraApi? = null
+
+    private val _cameraEvents = MutableSharedFlow<CameraMessage.Event>(extraBufferCapacity = 16, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /** Every message the camera sends on its own (msg_id 7), for screens that must react to them (the live view). */
+    val cameraEvents: SharedFlow<CameraMessage.Event> = _cameraEvents.asSharedFlow()
 
     val state: StateFlow<SessionState> = _state.asStateFlow()
     val status: StateFlow<CameraStatus> = _status.asStateFlow()
@@ -215,6 +227,13 @@ class CameraSession(
                 guarded(lost, "refresh") { readAll(connected) }
             }
         }
+        jobs += launch {
+            for (request in settingsRequests) {
+                delay(config.eventRefreshDelayMs)
+                awaitForeground()
+                guarded(lost, "settings refresh") { readSettings(connected) }
+            }
+        }
         jobs += launch { loopEvery(config.pollBatteryMs) { guarded(lost, "battery poll") { readBattery(connected) } } }
         jobs += launch {
             var quickChecks = 0
@@ -325,9 +344,13 @@ class CameraSession(
     }
 
     private fun onEvent(event: CameraMessage.Event) {
+        _cameraEvents.tryEmit(event)
         if (event.type == "battery") {
             val percent = StatusParser.percentOf(event.param)
             if (percent != null) _status.update { it.copy(batteryPercent = percent) }
+        } else {
+            // Seen: start_video_record, vf_stop, video_record_complete, vf_start, switch_to_cap_mode, switch_to_rec_mode.
+            settingsRequests.trySend(Unit)
         }
     }
 

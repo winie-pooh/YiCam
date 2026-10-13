@@ -43,6 +43,15 @@ The camera Wi-Fi gives the phone 192.168.42.2; the camera is 192.168.42.1, JSON 
 - Dates are unreliable: the camera clock was 2008-03-23, while some folders carry 2024/2025 dates.
 - Folder contents (files) were not seen in the phone probe; see plan section 11.1 for the PC probe results.
 
+## Live view on a phone (log of 2026-10-13, Android 17, Media3 1.8.0)
+- RTSP over TCP: SETUP is answered "461" (unsupported transport) every time. The camera does not do interleaved TCP. UDP (the player's default) works: video 640x480, first picture 0.46-0.74 s after the preview command.
+- The user measured a delay of about 3-4 s (not yet split into camera, Wi-Fi and player parts) and saw stripes of glitches about every 10-15 minutes in poor light only (none on another day): probably UDP packet loss when the encoder makes bigger frames.
+- msg_id 259 answered rval -21 while the camera was recording a video (twice).
+- Events seen (msg_id 7): start_video_record, vf_stop (recording started, the preview stops), video_record_complete (param = file path), vf_start, switch_to_cap_mode, switch_to_rec_mode.
+- The camera Wi-Fi vanished twice while the live view was open: about 17 s after switch_to_rec_mode (the stream had stalled 6 s before), and 10 s after switch_to_cap_mode. The camera clock went on without a reset (20:24:42 at 10:14:19, 20:32:27 at 10:22:04), so the camera did not reboot. User's account: the camera was left alone for about 3 minutes, then recording was started and stopped while the live view was open. In both losses a video_record_complete came 20-40 s earlier. Working theory (not proven): the camera loses its Wi-Fi after a recording ended while an RTSP session from before the recording was still open. The camera clock is not proof of uptime (it seems to run on without a reset), so a camera power-off cannot be ruled out; both of the 3-minute stretches with no button presses (10:14:19-10:17:20 and 10:22:04-10:25:23) passed with the camera still on while the app polled it every 20 s.
+- After the camera Wi-Fi vanished the phone fell back to the home Wi-Fi and did not return to the camera Wi-Fi by itself.
+- With UDP, when the camera stopped sending the player stayed in BUFFERING and later reached ENDED; the old controller kept the last frame on screen.
+
 ## SD card size (phone log of 2026-10-12, Android 17, v0.0.3)
 - First connection: msg_id 5 type total gave 17490, type free gave 17414 (kilobytes), the same again 30 s later, while the settings said sd_card_status "insert" and sdcard_need_format "no-need".
 - After the camera Wi-Fi was lost and the phone reconnected (camera clock continued without a reset: 07:19 to 07:21), the answers were total 30317536 and free 20959712 (a 32 GB card, 28.9 GiB).

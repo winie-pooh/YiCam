@@ -47,6 +47,8 @@ class LiveViewControllerTest {
                 maxStartAttempts = 2,
                 retryDelayMs = 20L,
                 firstFrameTimeoutMs = 300L,
+                stallTimeoutMs = 150L,
+                resumeWaitMs = 5_000L,
             ),
         )
     }
@@ -130,13 +132,95 @@ class LiveViewControllerTest {
     }
 
     @Test
-    fun secondAttempt_letsThePlayerChooseTheTransport() = test {
+    fun theStreamIsStartedWithoutForcedTcp_onEveryAttempt() = test {
         connectSession()
         controller.start()
         waitUntil("first start") { player.startedUrls.size == 1 }
-        player.emitError("tcp refused")
+        player.emitError("something")
         waitUntil("second start") { player.startedUrls.size == 2 }
-        assertEquals(listOf(true, false), player.startedWithTcp.toList())
+        assertEquals(listOf(false, false), player.startedWithTcp.toList())
+    }
+
+    @Test
+    fun cameraBusyAnswer_isShownAsRecording() = test {
+        server.previewRval = -21
+        connectSession()
+        controller.start()
+        waitUntil("problem") { problem() == LiveProblem.RECORDING }
+        assertEquals(0, player.startedUrls.size)
+    }
+
+    @Test
+    fun aFrozenPicture_isRestarted() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        player.emitBuffering(true) // and no more data
+        waitUntil("restarted") { player.startedUrls.size == 2 }
+    }
+
+    @Test
+    fun shortBufferingPauses_doNotRestartTheStream() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        repeat(5) {
+            player.emitBuffering(true)
+            delay(30)
+            player.emitBuffering(false)
+            delay(30)
+        }
+        delay(300)
+        assertEquals(1, player.startedUrls.size)
+        assertTrue(controller.state.value is LiveState.Playing)
+    }
+
+    @Test
+    fun aStreamThatEnds_isRestarted() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        player.emitEnded()
+        waitUntil("restarted") { player.startedUrls.size == 2 }
+    }
+
+    @Test
+    fun recordingStartsWhilePlaying_closesThePlayer_andResumesAfterTheCameraIsBack() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        delay(150) // let the event watcher subscribe
+        val stopsBefore = player.stopCalls.get()
+        server.pushEvent("""{ "msg_id": 7, "type": "start_video_record" }""")
+        server.pushEvent("""{ "msg_id": 7, "type": "vf_stop" }""")
+        waitUntil("paused as recording") { problem() == LiveProblem.RECORDING }
+        assertTrue(player.stopCalls.get() > stopsBefore)
+        assertEquals(1, player.startedUrls.size) // nothing is restarted while the camera records
+        delay(200)
+        assertEquals(1, player.startedUrls.size)
+        server.pushEvent(Fixtures.VF_START_EVENT)
+        waitUntil("resumed") { player.startedUrls.size == 2 }
+    }
+
+    @Test
+    fun lostLink_stopsTheLiveView_withNotConnected() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        delay(150)
+        network.emitLost()
+        waitUntil("problem") { problem() == LiveProblem.NOT_CONNECTED }
+        assertEquals(1, player.startedUrls.size)
     }
 
     @Test
