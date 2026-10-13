@@ -1,5 +1,5 @@
 /**
- * Responsible for: the actions behind the probe screen (dev tool): canned probe commands, the RTSP trace (RtspProbe.kt), raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
+ * Responsible for: the actions behind the probe screen (dev tool): canned probe commands (including the settings options dump), the RTSP trace (RtspProbe.kt), raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
  * Not responsible for: drawing the screen or asking for permissions (MainActivity.kt, ProbeScreen.kt), the link to the camera (CameraSession.kt) or the protocol (CameraApi.kt).
  */
 package com.example.yicam
@@ -36,6 +36,18 @@ class ProbeController private constructor(private val session: CameraSession) {
     fun changeToDcim() = launchCommand { it.send(Cmd.CHANGE_DIR, listOf("param" to "/tmp/fuse_d/DCIM")) }
 
     fun listFiles() = launchCommand { it.send(Cmd.LIST_FILES, listOf("param" to "-D -S")) }
+
+    /** Asks the camera for the possible values of every setting (msg_id 3 + param=key); the replies go to the log. Used to learn the reply format. */
+    fun dumpOptions() {
+        val keys = session.settings.value?.values?.keys?.toList().orEmpty()
+        launchCommand { api ->
+            if (keys.isEmpty()) log.sys("[ERR] No settings yet. Press Settings first.")
+            for (key in keys) {
+                if (key in SECRET_OPTION_KEYS) continue
+                api.send(Cmd.GET_SETTINGS, listOf("param" to key))
+            }
+        }
+    }
 
     fun sendRaw(json: String) = launchCommand { it.sendRaw(json) }
 
@@ -79,6 +91,7 @@ class ProbeController private constructor(private val session: CameraSession) {
 
     companion object {
         private const val RTSP_PORT = 554
+        private val SECRET_OPTION_KEYS = setOf("wifi_password", "serial_number")
 
         @Volatile
         private var instance: ProbeController? = null

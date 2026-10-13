@@ -44,4 +44,24 @@
     <string name="live_problem_preview_failed">Камера не запустила перегляд.</string>
     <string name="live_problem_stream_failed">Не вдалося відтворити відеопотік.</string>
     <string name="live_problem_stream_timeout">Картинка від камери не надійшла вчасно.</string>
+    <string name="mode_video">Відео</string>
+    <string name="mode_photo">Фото</string>
+    <string name="capture_single">Одиночне</string>
+    <string name="capture_timelapse">Таймлапс</string>
+    <string name="capture_burst">Серія</string>
+    <string name="capture_delayed">Таймер</string>
+    <string name="button_record_start">Почати запис</string>
+    <string name="button_record_stop">Зупинити запис</string>
+    <string name="button_photo">Зробити фото</string>
+    <string name="button_timelapse_stop">Зупинити таймлапс</string>
+    <string name="label_zoom">Зум %1$d</string>
+    <string name="note_photo">Команду фото надіслано.</string>
+    <string name="note_recording_started">Запис розпочато.</string>
+    <string name="note_recording_stopped">Запис зупинено.</string>
+    <string name="note_timelapse_stopped">Таймлапс зупинено.</string>
+    <string name="note_timelapse_done">Таймлапс завершено.</string>
+    <string name="note_saved">Збережено: %1$s</string>
+    <string name="note_mode_changed">Режим змінено.</string>
+    <string name="note_failed">Камера відхилила команду або не відповіла: %1$s</string>
+    <string name="note_not_connected">Камеру не підключено.</string>
 </resources>

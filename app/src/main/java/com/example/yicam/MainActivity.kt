@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var probe: ProbeController
     private lateinit var livePlayer: ExoRtspPlayer
     private lateinit var live: LiveViewController
+    private lateinit var controls: CameraController
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -47,11 +48,13 @@ class MainActivity : ComponentActivity() {
         val liveParts = LiveProvider.get(applicationContext)
         livePlayer = liveParts.player
         live = liveParts.controller
+        controls = ControlProvider.get(this)
         setContent {
             AppRoot(
                 session = session,
                 probe = probe,
                 live = live,
+                controls = controls,
                 livePlayer = livePlayer,
                 onConnect = ::connectClicked,
                 onShareLog = ::shareLog,
@@ -111,6 +114,7 @@ private fun AppRoot(
     session: CameraSession,
     probe: ProbeController,
     live: LiveViewController,
+    controls: CameraController,
     livePlayer: ExoRtspPlayer,
     onConnect: () -> Unit,
     onShareLog: () -> Unit,
@@ -132,6 +136,7 @@ private fun AppRoot(
                 "live" -> LiveScreen(
                     controller = live,
                     player = livePlayer,
+                    controls = controls,
                     onBack = { screen = "status" },
                 )
                 else -> StatusScreen(

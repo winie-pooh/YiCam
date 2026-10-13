@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized live view screen: the video surface (kept in the picture's aspect ratio), a status line, the technical detail of a problem, Start and Stop buttons.
+ * Responsible for: the localized live view screen: the video surface (kept in the picture's aspect ratio), a status line, the technical detail of a problem, Start and Stop buttons, and the control panel (ControlPanel.kt) below the video.
  * Not responsible for: the live view logic (LiveViewController.kt), the player (ExoRtspPlayer.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
@@ -40,6 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun LiveScreen(
     controller: LiveViewController,
     player: ExoRtspPlayer,
+    controls: CameraController,
     onBack: () -> Unit,
 ) {
     val state by controller.state.collectAsState()
@@ -98,6 +99,8 @@ fun LiveScreen(
         if (detail.isNotEmpty()) {
             Text(detail, fontFamily = FontFamily.Monospace, fontSize = 11.sp)
         }
+
+        ControlPanel(controls)
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = controller::start, modifier = Modifier.weight(1f)) {

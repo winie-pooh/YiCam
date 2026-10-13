@@ -31,6 +31,13 @@ class FakeCameraServer : AutoCloseable {
     @Volatile var previewRval = 0
     @Volatile var sawOverlap = false
 
+    /** Settings changed by msg_id 2 (and by time-lapse stop); the next msg_id 3 reply shows them. */
+    val settingValues = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** Forces the rval of a command (msg_id to rval), for refusal tests. */
+    val forcedRval = java.util.concurrent.ConcurrentHashMap<Int, Int>()
+    @Volatile var zoom = 0
+
     private val nextToken = AtomicInteger(1)
     @Volatile private var validToken = -1
     @Volatile private var client: Socket? = null
@@ -124,6 +131,25 @@ class FakeCameraServer : AutoCloseable {
             msgId == 3 -> settings()
             msgId == 5 -> sdReply(request["type"] == "total")
             msgId == 13 -> Fixtures.BATTERY_REPLY
+            forcedRval[msgId] != null -> """{"rval":${forcedRval[msgId]},"msg_id":$msgId}"""
+            msgId == 2 -> setSetting(request)
+            msgId == 770 -> {
+                settingValues["precise_cont_capturing"] = "off"
+                """{"rval":0,"msg_id":770}"""
+            }
+            msgId == 513 -> {
+                appStatus = "recording"
+                """{"rval":0,"msg_id":513}"""
+            }
+            msgId == 514 -> {
+                appStatus = "idle"
+                """{"rval":0,"msg_id":514}"""
+            }
+            msgId == 14 -> {
+                zoom = (request["param"] as? String)?.toIntOrNull() ?: zoom
+                """{"rval":0,"msg_id":14}"""
+            }
+            msgId == 15 -> """{ "rval": 0, "msg_id": 15, "param": "$zoom" }"""
             msgId == 1283 -> Fixtures.CHDIR_REPLY
             msgId == 1282 -> Fixtures.LISTING_REPLY
             msgId == 259 -> if (previewRval == 0) Fixtures.START_PREVIEW_REPLY else """{"rval":$previewRval,"msg_id":259}"""
@@ -131,10 +157,30 @@ class FakeCameraServer : AutoCloseable {
         }
         val extra = if (msgId != 257) gluedEventAfterReply.orEmpty() else ""
         write(s, reply + extra)
+        val accepted = token == validToken && forcedRval[msgId] == null
         if (msgId == 259 && token == validToken && previewRval == 0) {
             Thread.sleep(60)
             write(s, Fixtures.VF_START_EVENT)
         }
+        if (msgId == 513 && accepted) {
+            Thread.sleep(30)
+            write(s, Fixtures.START_VIDEO_RECORD_EVENT)
+            write(s, Fixtures.VF_STOP_EVENT)
+        }
+        if (msgId == 514 && accepted) {
+            Thread.sleep(30)
+            write(s, Fixtures.VIDEO_RECORD_COMPLETE_EVENT)
+            write(s, Fixtures.VF_START_EVENT)
+        }
+    }
+
+    /** msg_id 2: type/param. Remembers the value; the next msg_id 3 reply shows it. */
+    private fun setSetting(request: Map<String, Any?>): String {
+        val key = request["type"] as? String
+        val value = request["param"] as? String
+        if (key == null || value == null) return """{"rval":-1,"msg_id":2}"""
+        settingValues[key] = value
+        return """{"rval":0,"msg_id":2}"""
     }
 
     private fun sdReply(total: Boolean): String = when {
@@ -153,8 +199,13 @@ class FakeCameraServer : AutoCloseable {
             withAppStatus(Fixtures.SETTINGS_REPLY)
         }
 
-    private fun withAppStatus(json: String): String =
-        json.replace(Regex("\"app_status\":\\s*\"idle\""), "\"app_status\": \"$appStatus\"")
+    private fun withAppStatus(json: String): String {
+        var result = json.replace(Regex("\"app_status\":\\s*\"idle\""), "\"app_status\": \"$appStatus\"")
+        for ((key, value) in settingValues) {
+            result = result.replace(Regex("(\"$key\":\\s*)\"[^\"]*\""), "$1\"$value\"")
+        }
+        return result
+    }
 
     private fun write(s: Socket, text: String) {
         val bytes = text.toByteArray()

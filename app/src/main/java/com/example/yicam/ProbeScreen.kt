@@ -79,6 +79,7 @@ fun ProbeScreen(
             Button(onClick = controller::changeToDcim, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("cd DCIM") }
             Button(onClick = controller::listFiles, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("ls") }
             Button(onClick = controller::rtspTrace, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("RTSP trace") }
+            Button(onClick = controller::dumpOptions, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("Options") }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

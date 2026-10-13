@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.2.0 - controls: photo, recording, time-lapse stop, modes, zoom
+- CameraController (new): msg_id 769 (photo), 513/514 (record start/stop), 770 (stop time-lapse), 2 (system_mode, capture_mode), 14/15 (zoom, at most one command per 150 ms, the latest value wins). One command at a time. The buttons follow the camera state (app_status, system_mode, capture_mode, precise_cont_capturing) and events (video_record_complete shows the file name).
+- CameraSession.requestSettingsRefresh (new): re-reads the settings after the app changed something.
+- ControlPanel (new, on the live screen): Video/Photo, record or photo or stop time-lapse button, capture modes (single, time-lapse, burst, timer), zoom slider, result note. Texts in values, values-es, values-uk.
+- Probe screen: "Options" button asks the camera for the possible values of every setting (msg_id 3 + param=key); needed to learn the reply format for 0.3.0.
+- Tests: CameraControllerTest (16). Total 140 pass on the JVM here. The Compose files are not compiled here.
+- Unverified on the camera: the 769 reply, the zoom param format (0..100 string assumed), capture_mode values.
+
 ## 0.1.5 - the live view comes back by itself after the screen was off
 - Phone log (M12): rotation no longer restarts the stream; after the screen went off the stream stopped (by design) and had to be started by hand.
 - Now: going to the background (screen off) stops the stream but remembers that it was wanted; returning waits up to 10 s for the link to the camera and starts the stream again. A stream stopped by the user (Stop, Back) is not resumed.

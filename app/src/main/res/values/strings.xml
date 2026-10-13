@@ -45,4 +45,24 @@
     <string name="live_problem_preview_failed">The camera did not start the preview.</string>
     <string name="live_problem_stream_failed">The video stream could not be played.</string>
     <string name="live_problem_stream_timeout">No picture arrived from the camera in time.</string>
+    <string name="mode_video">Video</string>
+    <string name="mode_photo">Photo</string>
+    <string name="capture_single">Single</string>
+    <string name="capture_timelapse">Time-lapse</string>
+    <string name="capture_burst">Burst</string>
+    <string name="capture_delayed">Timer</string>
+    <string name="button_record_start">Start recording</string>
+    <string name="button_record_stop">Stop recording</string>
+    <string name="button_photo">Take photo</string>
+    <string name="button_timelapse_stop">Stop time-lapse</string>
+    <string name="label_zoom">Zoom %1$d</string>
+    <string name="note_photo">Photo command sent.</string>
+    <string name="note_recording_started">Recording started.</string>
+    <string name="note_recording_stopped">Recording stopped.</string>
+    <string name="note_timelapse_stopped">Time-lapse stopped.</string>
+    <string name="note_timelapse_done">Time-lapse finished.</string>
+    <string name="note_saved">Saved: %1$s</string>
+    <string name="note_mode_changed">Mode changed.</string>
+    <string name="note_failed">The camera refused or did not answer: %1$s</string>
+    <string name="note_not_connected">The camera is not connected.</string>
 </resources>

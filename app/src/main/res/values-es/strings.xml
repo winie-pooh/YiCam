@@ -44,4 +44,24 @@
     <string name="live_problem_preview_failed">La cámara no inició la vista previa.</string>
     <string name="live_problem_stream_failed">No se pudo reproducir el flujo de vídeo.</string>
     <string name="live_problem_stream_timeout">No llegó imagen de la cámara a tiempo.</string>
+    <string name="mode_video">Vídeo</string>
+    <string name="mode_photo">Foto</string>
+    <string name="capture_single">Simple</string>
+    <string name="capture_timelapse">Time-lapse</string>
+    <string name="capture_burst">Ráfaga</string>
+    <string name="capture_delayed">Temporizador</string>
+    <string name="button_record_start">Iniciar grabación</string>
+    <string name="button_record_stop">Detener grabación</string>
+    <string name="button_photo">Hacer foto</string>
+    <string name="button_timelapse_stop">Detener time-lapse</string>
+    <string name="label_zoom">Zoom %1$d</string>
+    <string name="note_photo">Comando de foto enviado.</string>
+    <string name="note_recording_started">Grabación iniciada.</string>
+    <string name="note_recording_stopped">Grabación detenida.</string>
+    <string name="note_timelapse_stopped">Time-lapse detenido.</string>
+    <string name="note_timelapse_done">Time-lapse terminado.</string>
+    <string name="note_saved">Guardado: %1$s</string>
+    <string name="note_mode_changed">Modo cambiado.</string>
+    <string name="note_failed">La cámara rechazó el comando o no respondió: %1$s</string>
+    <string name="note_not_connected">La cámara no está conectada.</string>
 </resources>

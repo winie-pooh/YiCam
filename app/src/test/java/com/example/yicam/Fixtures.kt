@@ -34,6 +34,12 @@ object Fixtures {
     fun batteryEvent(percent: Int): String = """{ "msg_id": 7, "type": "battery" ,"param":"$percent"}"""
 
     const val VF_START_EVENT = """{ "msg_id": 7, "type": "vf_start" }"""
+    const val VF_STOP_EVENT = """{ "msg_id": 7, "type": "vf_stop" }"""
+    const val START_VIDEO_RECORD_EVENT = """{ "msg_id": 7, "type": "start_video_record" }"""
+
+    /** param is the path of the new video (seen in the phone log of 2026-10-13). */
+    const val VIDEO_RECORD_COMPLETE_EVENT =
+        """{ "msg_id": 7, "type": "video_record_complete", "param": "\/tmp\/fuse_d\/DCIM\/101MEDIA\/YDXJ0042.mp4" }"""
 
     const val CHDIR_REPLY = """{ "rval": 0, "msg_id": 1283, "pwd": "\/tmp\/fuse_d\/DCIM" }"""
 

@@ -124,6 +124,11 @@ class CameraSession(
         refreshRequests.trySend(Unit)
     }
 
+    /** Reads the settings again soon (after a short pause, as after a camera event). Used after the app itself changed something. */
+    fun requestSettingsRefresh() {
+        settingsRequests.trySend(Unit)
+    }
+
     /** False while the app is in the background: polling and reconnect attempts wait until it is true again. */
     fun setForeground(value: Boolean) {
         foreground.value = value
