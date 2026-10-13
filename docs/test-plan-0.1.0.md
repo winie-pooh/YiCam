@@ -28,8 +28,10 @@ Nothing in 0.1.0 has been compiled or run by the author (no Kotlin compiler wher
 | M10 | Open Live view with the camera in photo mode | Works or a clear message | Result |
 
 ## If the picture does not appear
-Send (a) the log from the Probe screen (Share log) and (b) the Logcat of the app filtered by `RtspClient|ExoPlayer|ExoRtspPlayer`.
-The log lines starting with `[LIVE]` show every step. Known risk: the camera's RTSP reply has a broken `Content-Base: rtsp:///live/` header; if Media3 stops with an RTSP/source error, the next step is a libVLC test, then a small own RTSP client.
+1. Read the technical line under the picture: it now shows the whole chain of causes (for example `RtspPlaybackException <- ... <- SocketException: ...`), not only "Source error". The first attempt uses RTP over TCP, the second lets the player choose (UDP first); both are written to the log as `[LIVE]` lines.
+2. On the Probe screen (menu, three dots, Probe) press Connect, then **RTSP trace**. The app starts the preview and writes the full RTSP conversation with the camera to the log (`[RTSP]` lines: OPTIONS, DESCRIBE with the SDP, SETUP with several address guesses, PLAY, and how many media frames arrived in 3 s).
+3. Press Share log and send the text. Optionally also send the Logcat of the app filtered by `RtspClient|ExoPlayer|ExoRtspPlayer`.
+Known risk: the camera's RTSP reply has a broken `Content-Base: rtsp:///live/` header; if Media3 stops with an RTSP/source error, the next step is a libVLC test, then a small own RTSP client.
 
 ## Decision rules (after the report)
 - Picture within 5 s and delay under 1.5 s: keep Media3.

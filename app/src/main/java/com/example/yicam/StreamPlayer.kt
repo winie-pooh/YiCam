@@ -13,8 +13,8 @@ interface StreamPlayer {
         fun onError(message: String)
     }
 
-    /** Starts playing [url]; replaces anything that was playing. */
-    fun start(url: String, listener: Listener)
+    /** Starts playing [url]; replaces anything that was playing. [useTcp] true forces RTP over TCP, false lets the player choose (it tries UDP first). */
+    fun start(url: String, listener: Listener, useTcp: Boolean = true)
 
     /** Stops playing and frees the decoder. Safe to call at any time. */
     fun stop()

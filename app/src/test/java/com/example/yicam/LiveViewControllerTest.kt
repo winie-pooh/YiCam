@@ -130,6 +130,16 @@ class LiveViewControllerTest {
     }
 
     @Test
+    fun secondAttempt_letsThePlayerChooseTheTransport() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitError("tcp refused")
+        waitUntil("second start") { player.startedUrls.size == 2 }
+        assertEquals(listOf(true, false), player.startedWithTcp.toList())
+    }
+
+    @Test
     fun noPictureInTime_endsAsATimeout() = test {
         connectSession()
         controller.start()

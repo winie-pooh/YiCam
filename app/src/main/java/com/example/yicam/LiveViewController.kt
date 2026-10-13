@@ -89,6 +89,9 @@ class LiveViewController(
 
             _state.value = LiveState.ConnectingStream
             val events = Channel<StreamEvent>(Channel.UNLIMITED)
+            // First attempt: RTP over TCP. Second attempt: let the player choose (UDP first), in case the camera dislikes TCP.
+            val useTcp = attempt % 2 == 1
+            log("starting the stream (attempt $attempt, ${if (useTcp) "TCP" else "player's choice"})")
             player.start(
                 config.rtspUrl,
                 object : StreamPlayer.Listener {
@@ -100,6 +103,7 @@ class LiveViewController(
                         events.trySend(StreamEvent.Failed(message))
                     }
                 },
+                useTcp,
             )
 
             val first = withTimeoutOrNull(config.firstFrameTimeoutMs) { events.receive() }

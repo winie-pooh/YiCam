@@ -1,5 +1,5 @@
 /**
- * Responsible for: the probe screen (dev tool, English text only): connection buttons, canned and raw commands, log view, Share log, a way back to the status screen.
+ * Responsible for: the probe screen (dev tool, English text only): connection buttons, canned and raw commands, the RTSP trace button, log view, Share log, a way back to the status screen.
  * Not responsible for: any network or protocol logic (ProbeController.kt, CameraSession.kt) or the localized status screen (StatusScreen.kt).
  */
 package com.example.yicam
@@ -78,6 +78,7 @@ fun ProbeScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             Button(onClick = controller::changeToDcim, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("cd DCIM") }
             Button(onClick = controller::listFiles, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("ls") }
+            Button(onClick = controller::rtspTrace, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("RTSP trace") }
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

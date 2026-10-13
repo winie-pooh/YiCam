@@ -36,9 +36,9 @@ class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) :
     }
 
     /** Call on the main thread. */
-    override fun start(url: String, listener: StreamPlayer.Listener) {
+    override fun start(url: String, listener: StreamPlayer.Listener, useTcp: Boolean) {
         stop()
-        log.sys("[LIVE] player start: $url (RTP over TCP)")
+        log.sys("[LIVE] player start: $url (${if (useTcp) "RTP over TCP" else "transport chosen by the player, UDP first"})")
         val loadControl = DefaultLoadControl.Builder()
             .setBufferDurationsMs(MIN_BUFFER_MS, MAX_BUFFER_MS, PLAYBACK_BUFFER_MS, REBUFFER_MS)
             .build()
@@ -61,13 +61,14 @@ class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) :
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                log.sys("[LIVE] player error ${error.errorCodeName}: ${error.message} (cause: ${error.cause})")
-                listener.onError("${error.errorCodeName}: ${error.message ?: ""}")
+                val chain = causeChain(error)
+                log.sys("[LIVE] player error ${error.errorCodeName}: $chain")
+                listener.onError("${error.errorCodeName}: $chain")
             }
         })
         surface?.let { exo.setVideoSurfaceView(it) }
         val source = RtspMediaSource.Factory()
-            .setForceUseRtpTcp(true)
+            .setForceUseRtpTcp(useTcp)
             .setTimeoutMs(RTSP_TIMEOUT_MS)
             .createMediaSource(MediaItem.fromUri(url))
         exo.setMediaSource(source)
@@ -83,6 +84,10 @@ class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) :
         current.release()
         log.sys("[LIVE] player released")
     }
+
+    /** "RtspPlaybackException: ... <- SocketException: ..." so the real reason is visible, not only "Source error". */
+    private fun causeChain(error: Throwable): String =
+        generateSequence(error) { it.cause }.joinToString(" <- ") { "${it.javaClass.simpleName}: ${it.message}" }
 
     private fun stateName(state: Int): String = when (state) {
         Player.STATE_IDLE -> "IDLE"

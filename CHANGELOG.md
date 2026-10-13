@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.1.1 - the first live view run on a phone failed with "ERROR_CODE_IO_UNSPECIFIED: Source error"
+- That message is Media3's generic wrapper; the real reason was hidden. Now the player error shows the whole chain of causes (on screen and as a [LIVE] log line).
+- The second start attempt no longer forces RTP over TCP: the player chooses the transport itself (UDP first). The first attempt still uses TCP. Both are logged.
+- RtspProbe (new) and an "RTSP trace" button on the probe screen: starts the preview, then writes a full RTSP conversation with the camera (OPTIONS, DESCRIBE with SDP, SETUP with several address guesses, PLAY, and how many media frames arrive in 3 s) to the log. This shows which step the camera refuses and which SETUP address works.
+- Test plan: updated "If the picture does not appear"; Ukrainian translation added (docs/test-plan-0.1.0.uk.md).
+- Tests: secondAttempt_letsThePlayerChooseTheTransport; FakeStreamPlayer records the transport. Not compiled or run here.
+
 ## 0.1.0 - live view (first version, not yet run on a phone)
 - LiveViewController (new): checks that a preview is possible (connected, not recording, preview not switched off), sends msg_id 259 `none_force`, starts the player on rtsp://192.168.42.1:554/live, waits for the first picture (12 s), retries once, restarts a stream that breaks while playing, and measures the time from Start to the first picture.
 - ExoRtspPlayer (new): Media3 ExoPlayer with RTP over TCP and small buffers (0.1 s to start, 1 s at most); logs player states, video size and errors as [LIVE] lines. StreamPlayer is the interface the controller uses, so the logic is tested with a fake player.

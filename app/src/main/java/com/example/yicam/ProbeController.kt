@@ -1,5 +1,5 @@
 /**
- * Responsible for: the actions behind the probe screen (dev tool): canned probe commands, raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
+ * Responsible for: the actions behind the probe screen (dev tool): canned probe commands, the RTSP trace (RtspProbe.kt), raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
  * Not responsible for: drawing the screen or asking for permissions (MainActivity.kt, ProbeScreen.kt), the link to the camera (CameraSession.kt) or the protocol (CameraApi.kt).
  */
 package com.example.yicam
@@ -8,6 +8,7 @@ import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -38,6 +39,26 @@ class ProbeController private constructor(private val session: CameraSession) {
 
     fun sendRaw(json: String) = launchCommand { it.sendRaw(json) }
 
+    /** Starts the preview, then writes a full RTSP conversation with the camera to the log (see RtspProbe). */
+    fun rtspTrace() {
+        val current = session.currentApi
+        scope.launch(Dispatchers.IO) {
+            if (current != null) {
+                try {
+                    current.send(Cmd.START_PREVIEW, listOf("param" to "none_force"))
+                    delay(1_500L)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    log.sys("[ERR] preview command: ${e.message ?: e.javaClass.simpleName}")
+                }
+            } else {
+                log.sys("[RTSP] not connected: the preview was not started, the trace will probably fail")
+            }
+            RtspProbe.run(CameraConnection.DEFAULT_HOST, RTSP_PORT, "/live", log)
+        }
+    }
+
     /** Runs one command in the background on the current connection; the reply and any error end up in the log. */
     private fun launchCommand(action: suspend (CameraApi) -> Unit) {
         val current = session.currentApi
@@ -57,6 +78,8 @@ class ProbeController private constructor(private val session: CameraSession) {
     }
 
     companion object {
+        private const val RTSP_PORT = 554
+
         @Volatile
         private var instance: ProbeController? = null
 

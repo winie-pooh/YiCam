@@ -9,13 +9,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class FakeStreamPlayer : StreamPlayer {
     val startedUrls = CopyOnWriteArrayList<String>()
+    val startedWithTcp = CopyOnWriteArrayList<Boolean>()
     val stopCalls = AtomicInteger(0)
 
     @Volatile
     private var listener: StreamPlayer.Listener? = null
 
-    override fun start(url: String, listener: StreamPlayer.Listener) {
+    override fun start(url: String, listener: StreamPlayer.Listener, useTcp: Boolean) {
         startedUrls.add(url)
+        startedWithTcp.add(useTcp)
         this.listener = listener
     }
 
