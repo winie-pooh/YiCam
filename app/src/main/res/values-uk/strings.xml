@@ -30,4 +30,18 @@
     <string name="button_open_settings">Відкрити налаштування застосунку</string>
     <string name="title_settings_snapshot">Налаштування камери (лише читання)</string>
     <string name="no_data_yet">Даних ще немає</string>
+    <string name="button_live_view">Пряма трансляція</string>
+    <string name="title_live">Пряма трансляція</string>
+    <string name="button_live_start">Старт</string>
+    <string name="button_live_stop">Стоп</string>
+    <string name="live_idle">Натисніть «Старт»</string>
+    <string name="live_starting_preview">Запускаю перегляд на камері…</string>
+    <string name="live_connecting_stream">Підключаюся до відеопотоку…</string>
+    <string name="live_playing">Наживо · запущено за %1$d мс</string>
+    <string name="live_problem_not_connected">Камера не підключена.</string>
+    <string name="live_problem_recording">Перегляд недоступний, поки камера записує.</string>
+    <string name="live_problem_preview_disabled">Перегляд вимкнено в налаштуваннях камери.</string>
+    <string name="live_problem_preview_failed">Камера не запустила перегляд.</string>
+    <string name="live_problem_stream_failed">Не вдалося відтворити відеопотік.</string>
+    <string name="live_problem_stream_timeout">Картинка від камери не надійшла вчасно.</string>
 </resources>

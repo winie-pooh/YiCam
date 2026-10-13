@@ -30,4 +30,18 @@
     <string name="button_open_settings">Abrir ajustes de la aplicación</string>
     <string name="title_settings_snapshot">Ajustes de la cámara (solo lectura)</string>
     <string name="no_data_yet">Todavía no hay datos</string>
+    <string name="button_live_view">Vista en vivo</string>
+    <string name="title_live">Vista en vivo</string>
+    <string name="button_live_start">Iniciar</string>
+    <string name="button_live_stop">Detener</string>
+    <string name="live_idle">Pulsa Iniciar</string>
+    <string name="live_starting_preview">Iniciando la vista previa en la cámara…</string>
+    <string name="live_connecting_stream">Conectando con el flujo de vídeo…</string>
+    <string name="live_playing">En vivo · iniciado en %1$d ms</string>
+    <string name="live_problem_not_connected">La cámara no está conectada.</string>
+    <string name="live_problem_recording">La vista previa no está disponible mientras la cámara graba.</string>
+    <string name="live_problem_preview_disabled">La vista previa está desactivada en los ajustes de la cámara.</string>
+    <string name="live_problem_preview_failed">La cámara no inició la vista previa.</string>
+    <string name="live_problem_stream_failed">No se pudo reproducir el flujo de vídeo.</string>
+    <string name="live_problem_stream_timeout">No llegó imagen de la cámara a tiempo.</string>
 </resources>

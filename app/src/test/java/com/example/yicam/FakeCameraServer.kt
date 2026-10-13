@@ -27,6 +27,8 @@ class FakeCameraServer : AutoCloseable {
     @Volatile var rejectEveryCommand = false
     @Volatile var leakSecrets = false
     @Volatile var tinySd = false
+    @Volatile var appStatus = "idle"
+    @Volatile var previewRval = 0
     @Volatile var sawOverlap = false
 
     private val nextToken = AtomicInteger(1)
@@ -124,12 +126,12 @@ class FakeCameraServer : AutoCloseable {
             msgId == 13 -> Fixtures.BATTERY_REPLY
             msgId == 1283 -> Fixtures.CHDIR_REPLY
             msgId == 1282 -> Fixtures.LISTING_REPLY
-            msgId == 259 -> Fixtures.START_PREVIEW_REPLY
+            msgId == 259 -> if (previewRval == 0) Fixtures.START_PREVIEW_REPLY else """{"rval":$previewRval,"msg_id":259}"""
             else -> """{"rval":0,"msg_id":$msgId}"""
         }
         val extra = if (msgId != 257) gluedEventAfterReply.orEmpty() else ""
         write(s, reply + extra)
-        if (msgId == 259 && token == validToken) {
+        if (msgId == 259 && token == validToken && previewRval == 0) {
             Thread.sleep(60)
             write(s, Fixtures.VF_START_EVENT)
         }
@@ -144,12 +146,15 @@ class FakeCameraServer : AutoCloseable {
 
     private fun settings(): String =
         if (leakSecrets) {
-            Fixtures.SETTINGS_REPLY
+            withAppStatus(Fixtures.SETTINGS_REPLY)
                 .replace("\"wifi_password\": \"*\"", "\"wifi_password\": \"hunter2\"")
                 .replace("\"serial_number\": \"*\"", "\"serial_number\": \"ABC123456\"")
         } else {
-            Fixtures.SETTINGS_REPLY
+            withAppStatus(Fixtures.SETTINGS_REPLY)
         }
+
+    private fun withAppStatus(json: String): String =
+        json.replace(Regex("\"app_status\":\\s*\"idle\""), "\"app_status\": \"$appStatus\"")
 
     private fun write(s: Socket, text: String) {
         val bytes = text.toByteArray()

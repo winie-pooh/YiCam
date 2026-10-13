@@ -1,6 +1,6 @@
 /**
- * Responsible for: the single activity: choosing between the status screen and the probe screen, asking for the local network permission, telling the session when the app goes to the background, Share log.
- * Not responsible for: drawing the screens (StatusScreen.kt, ProbeScreen.kt) or any link/protocol logic (CameraSession.kt).
+ * Responsible for: the single activity: choosing between the status, live view and probe screens, asking for the local network permission, telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
 
@@ -27,10 +27,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     private lateinit var session: CameraSession
     private lateinit var probe: ProbeController
+    private lateinit var livePlayer: ExoRtspPlayer
+    private lateinit var live: LiveViewController
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -42,10 +45,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         session = SessionProvider.get(this)
         probe = ProbeController.get(this)
+        livePlayer = ExoRtspPlayer(applicationContext, session.log)
+        live = LiveViewController(session, livePlayer, lifecycleScope)
         setContent {
             AppRoot(
                 session = session,
                 probe = probe,
+                live = live,
+                livePlayer = livePlayer,
                 onConnect = ::connectClicked,
                 onShareLog = ::shareLog,
                 onOpenSettings = ::openAppSettings,
@@ -59,6 +66,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        live.stop()
         session.setForeground(false)
         super.onStop()
     }
@@ -100,28 +108,36 @@ class MainActivity : ComponentActivity() {
 private fun AppRoot(
     session: CameraSession,
     probe: ProbeController,
+    live: LiveViewController,
+    livePlayer: ExoRtspPlayer,
     onConnect: () -> Unit,
     onShareLog: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    var showProbe by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = showProbe) { showProbe = false }
+    // "status", "live" or "probe"
+    var screen by rememberSaveable { mutableStateOf("status") }
+    BackHandler(enabled = screen != "status") { screen = "status" }
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            if (showProbe) {
-                ProbeScreen(
+            when (screen) {
+                "probe" -> ProbeScreen(
                     controller = probe,
                     onConnect = onConnect,
                     onShareLog = onShareLog,
                     onOpenSettings = onOpenSettings,
-                    onBack = { showProbe = false },
+                    onBack = { screen = "status" },
                 )
-            } else {
-                StatusScreen(
+                "live" -> LiveScreen(
+                    controller = live,
+                    player = livePlayer,
+                    onBack = { screen = "status" },
+                )
+                else -> StatusScreen(
                     session = session,
                     onConnect = onConnect,
                     onOpenSettings = onOpenSettings,
-                    onOpenProbe = { showProbe = true },
+                    onOpenProbe = { screen = "probe" },
+                    onOpenLive = { screen = "live" },
                 )
             }
         }

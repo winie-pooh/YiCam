@@ -1,0 +1,21 @@
+/**
+ * Responsible for: the contract of a video player that plays one RTSP stream and reports the first picture or an error, so the live view logic can be tested without Android.
+ * Not responsible for: any player implementation (ExoRtspPlayer.kt) or the live view logic (LiveViewController.kt).
+ */
+package com.example.yicam
+
+interface StreamPlayer {
+    interface Listener {
+        /** The first video frame was drawn. */
+        fun onFirstFrame()
+
+        /** The stream failed or ended; [message] is English text for the log. */
+        fun onError(message: String)
+    }
+
+    /** Starts playing [url]; replaces anything that was playing. */
+    fun start(url: String, listener: Listener)
+
+    /** Stops playing and frees the decoder. Safe to call at any time. */
+    fun stop()
+}

@@ -31,4 +31,18 @@
     <string name="button_open_settings">Open app settings</string>
     <string name="title_settings_snapshot">Camera settings (read only)</string>
     <string name="no_data_yet">No data yet</string>
+    <string name="button_live_view">Live view</string>
+    <string name="title_live">Live view</string>
+    <string name="button_live_start">Start</string>
+    <string name="button_live_stop">Stop</string>
+    <string name="live_idle">Press Start</string>
+    <string name="live_starting_preview">Starting the preview on the camera…</string>
+    <string name="live_connecting_stream">Connecting to the video stream…</string>
+    <string name="live_playing">Live · started in %1$d ms</string>
+    <string name="live_problem_not_connected">The camera is not connected.</string>
+    <string name="live_problem_recording">The preview is not available while the camera is recording.</string>
+    <string name="live_problem_preview_disabled">The preview is switched off in the camera settings.</string>
+    <string name="live_problem_preview_failed">The camera did not start the preview.</string>
+    <string name="live_problem_stream_failed">The video stream could not be played.</string>
+    <string name="live_problem_stream_timeout">No picture arrived from the camera in time.</string>
 </resources>

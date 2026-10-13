@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.1.0 - live view (first version, not yet run on a phone)
+- LiveViewController (new): checks that a preview is possible (connected, not recording, preview not switched off), sends msg_id 259 `none_force`, starts the player on rtsp://192.168.42.1:554/live, waits for the first picture (12 s), retries once, restarts a stream that breaks while playing, and measures the time from Start to the first picture.
+- ExoRtspPlayer (new): Media3 ExoPlayer with RTP over TCP and small buffers (0.1 s to start, 1 s at most); logs player states, video size and errors as [LIVE] lines. StreamPlayer is the interface the controller uses, so the logic is tested with a fake player.
+- LiveScreen (new, EN/ES/UK): video kept in the picture's aspect ratio, status text, technical detail of a problem, Start/Stop. A "Live view" button was added to the status screen. The live view stops when the app goes to the background.
+- The camera's preview is not stopped when the live view is stopped: no command for that is known yet (to be tried with the probe screen).
+- Needs two manual edits: Media3 dependencies in app/build.gradle.kts and configChanges in the manifest (docs/test-plan-0.1.0.md).
+- Tests: LiveViewControllerTest (8 cases), FakeStreamPlayer; FakeCameraServer got appStatus and previewRval.
+- Open risk: the camera's RTSP reply has a broken Content-Base header; whether Media3 copes is only known after a phone test (docs/test-plan-0.1.0.md has the decision rules: Media3, then libVLC, then an own RTSP client).
+
 ## 0.0.3.1 - fixes after the first phone run of 0.0.3 (Android 17)
 - SD card: on the first connection the camera itself answered total 17490 KB / free 17414 KB (a 17 MB "card") although sd_card_status was "insert"; on the next connection it answered 30317536 / 20959712. The app showed exactly what the camera said. Now a total below 512 MB (Config.minPlausibleSdKb) is not shown as a card: the status says "Not usable: the camera reports only 17.9 MB" and the SD size is read again every 5 s (12 times, then every 60 s) until it looks real. New field CameraStatus.sdUnusableReportedKb; new string sd_not_usable (EN, ES, UK).
 - CameraOff: after the first (short) attempt there was a blind pause of about 25 s in which a returning Wi-Fi was not noticed. Now the pause is 1 s and the next attempt itself waits up to 30 s for the Wi-Fi, so recovery is immediate; an attempt that fails at once still waits 30 s so it cannot spin.
