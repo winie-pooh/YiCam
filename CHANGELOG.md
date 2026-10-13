@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.1.4 - rotation keeps the live view playing
+- Phone log: a rotation released the player and started the stream again within 50 ms (picture back after about 0.5 s), although configChanges is in the manifest, so the activity is probably recreated anyway.
+- LiveProvider (new) keeps the player and the LiveViewController for the whole process; the activity and the screen no longer stop the live view when they are going away because of a configuration change; the screen starts the stream only if it is not already running. A new surface is attached to the running player. Not compiled or run here.
+
 ## 0.1.3 - recording while the live view is open
 - User account of the two Wi-Fi losses: the camera had been left alone for about 3 minutes, then a recording was started and stopped while the live view was open. The log agrees: both times the camera Wi-Fi vanished 20-40 s after video_record_complete, with the RTSP session still open on the phone (the preview stops with vf_stop when the recording starts, and the old controller never closed the session). The cause is not proven.
 - Now: when the camera sends vf_stop or start_video_record, the player is closed at once (the RTSP session ends cleanly), the screen shows "not available while the camera is recording", and the stream is started again by itself 1.5 s after the camera sends vf_start (waits up to 5 minutes).

@@ -27,7 +27,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
 
 class MainActivity : ComponentActivity() {
     private lateinit var session: CameraSession
@@ -45,8 +44,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         session = SessionProvider.get(this)
         probe = ProbeController.get(this)
-        livePlayer = ExoRtspPlayer(applicationContext, session.log)
-        live = LiveViewController(session, livePlayer, lifecycleScope)
+        val liveParts = LiveProvider.get(applicationContext)
+        livePlayer = liveParts.player
+        live = liveParts.controller
         setContent {
             AppRoot(
                 session = session,
@@ -66,7 +66,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        live.stop()
+        // A rotation also stops the activity: the live view must go on then.
+        if (!isChangingConfigurations) live.stop()
         session.setForeground(false)
         super.onStop()
     }

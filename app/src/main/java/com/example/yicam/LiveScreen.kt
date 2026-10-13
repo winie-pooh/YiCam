@@ -4,6 +4,7 @@
  */
 package com.example.yicam
 
+import android.app.Activity
 import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -43,10 +45,16 @@ fun LiveScreen(
     val state by controller.state.collectAsState()
     val aspect by player.videoAspect.collectAsState()
 
-    LaunchedEffect(Unit) { controller.start() }
+    val activity = LocalContext.current as? Activity
+
+    // Not on every entry: after a rotation the stream is already running and must not be restarted.
+    LaunchedEffect(Unit) {
+        val current = controller.state.value
+        if (current is LiveState.Idle || current is LiveState.Problem) controller.start()
+    }
     DisposableEffect(Unit) {
         onDispose {
-            controller.stop()
+            if (activity?.isChangingConfigurations != true) controller.stop()
             player.attachSurface(null)
         }
     }
