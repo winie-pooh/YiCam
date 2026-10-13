@@ -211,6 +211,31 @@ class LiveViewControllerTest {
     }
 
     @Test
+    fun background_stopsTheStream_andReturningStartsItAgain() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        controller.pauseForBackground()
+        assertEquals(LiveState.Idle, controller.state.value)
+        controller.resumeAfterBackground()
+        waitUntil("started again") { player.startedUrls.size == 2 }
+    }
+
+    @Test
+    fun stoppedByTheUser_isNotResumedWhenTheAppReturns() = test {
+        connectSession()
+        controller.start()
+        waitUntil("first start") { player.startedUrls.size == 1 }
+        controller.stop()
+        controller.pauseForBackground()
+        controller.resumeAfterBackground()
+        delay(300)
+        assertEquals(1, player.startedUrls.size)
+    }
+
+    @Test
     fun lostLink_stopsTheLiveView_withNotConnected() = test {
         connectSession()
         controller.start()

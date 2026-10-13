@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.1.5 - the live view comes back by itself after the screen was off
+- Phone log (M12): rotation no longer restarts the stream; after the screen went off the stream stopped (by design) and had to be started by hand.
+- Now: going to the background (screen off) stops the stream but remembers that it was wanted; returning waits up to 10 s for the link to the camera and starts the stream again. A stream stopped by the user (Stop, Back) is not resumed.
+- Tests: background_stopsTheStream_andReturningStartsItAgain, stoppedByTheUser_isNotResumedWhenTheAppReturns. Not compiled or run here.
+
 ## 0.1.4 - rotation keeps the live view playing
 - Phone log: a rotation released the player and started the stream again within 50 ms (picture back after about 0.5 s), although configChanges is in the manifest, so the activity is probably recreated anyway.
 - LiveProvider (new) keeps the player and the LiveViewController for the whole process; the activity and the screen no longer stop the live view when they are going away because of a configuration change; the screen starts the stream only if it is not already running. A new surface is attached to the running player. Not compiled or run here.

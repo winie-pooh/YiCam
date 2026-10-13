@@ -1,5 +1,5 @@
 /**
- * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream (UDP: the camera refuses TCP), waiting for the first picture, noticing a frozen or ended stream or a lost link, pausing when the camera starts recording and resuming after it, retrying, and restarting a stream that breaks.
+ * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream (UDP: the camera refuses TCP), waiting for the first picture, noticing a frozen or ended stream or a lost link, pausing when the camera starts recording and resuming after it, pausing when the app goes to the background (screen off) and resuming when it returns, retrying, and restarting a stream that breaks.
  * Not responsible for: the video decoding itself (StreamPlayer.kt, ExoRtspPlayer.kt), drawing (LiveScreen.kt) or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -35,6 +35,8 @@ class LiveViewController(
         val stallTimeoutMs: Long = 5_000L,
         /** After the camera stopped its preview (recording), how long to wait for it to come back before giving up. */
         val resumeWaitMs: Long = 300_000L,
+        /** After the app returns from the background, how long to wait for the link to the camera before giving up. */
+        val linkWaitMs: Long = 10_000L,
     )
 
     private sealed interface StreamEvent {
@@ -68,22 +70,50 @@ class LiveViewController(
     @Volatile
     private var job: Job? = null
 
+    @Volatile
+    private var resumeOnReturn = false
+
     /** Starts (or restarts) the live view. */
-    fun start() {
-        job?.cancel()
-        player.stop()
-        job = scope.launch { run() }
-    }
+    fun start() = begin(waitForLink = false)
 
     /** Stops the player and returns to Idle. The camera keeps its preview running (no command to stop it is known yet). */
     fun stop() {
+        resumeOnReturn = false
+        halt()
+    }
+
+    /** The app goes to the background (screen off): stops, but remembers whether a picture was wanted. */
+    fun pauseForBackground() {
+        val wanted = _state.value !is LiveState.Idle && _state.value !is LiveState.Problem
+        halt()
+        resumeOnReturn = wanted
+    }
+
+    /** The app is back: starts again if the live view was running when it went away (waits for the link to the camera first). */
+    fun resumeAfterBackground() {
+        if (!resumeOnReturn) return
+        resumeOnReturn = false
+        begin(waitForLink = true)
+    }
+
+    private fun begin(waitForLink: Boolean) {
+        job?.cancel()
+        player.stop()
+        job = scope.launch { run(waitForLink) }
+    }
+
+    private fun halt() {
         job?.cancel()
         job = null
         player.stop()
         _state.value = LiveState.Idle
     }
 
-    private suspend fun run() {
+    private suspend fun run(waitForLink: Boolean) {
+        if (waitForLink) {
+            _state.value = LiveState.StartingPreview
+            withTimeoutOrNull(config.linkWaitMs) { session.state.first { it is SessionState.Connected } }
+        }
         val blocked = blockingProblem()
         if (blocked != null) {
             log("not started: ${blocked.name}")

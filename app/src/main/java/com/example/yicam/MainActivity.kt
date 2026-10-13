@@ -63,11 +63,12 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         session.setForeground(true)
+        live.resumeAfterBackground()
     }
 
     override fun onStop() {
         // A rotation also stops the activity: the live view must go on then.
-        if (!isChangingConfigurations) live.stop()
+        if (!isChangingConfigurations) live.pauseForBackground()
         session.setForeground(false)
         super.onStop()
     }
