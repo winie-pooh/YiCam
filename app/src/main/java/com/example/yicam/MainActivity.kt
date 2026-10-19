@@ -1,6 +1,6 @@
 /**
- * Responsible for: the single activity: choosing between the status, live view and probe screens, asking for the local network permission, telling the session when the app goes to the background and stopping the live view then, Share log.
- * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
+ * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
 
@@ -34,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var livePlayer: ExoRtspPlayer
     private lateinit var live: LiveViewController
     private lateinit var controls: CameraController
+    private lateinit var cameraSettings: CameraSettings
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -49,12 +50,14 @@ class MainActivity : ComponentActivity() {
         livePlayer = liveParts.player
         live = liveParts.controller
         controls = ControlProvider.get(this)
+        cameraSettings = ControlProvider.settings(this)
         setContent {
             AppRoot(
                 session = session,
                 probe = probe,
                 live = live,
                 controls = controls,
+                cameraSettings = cameraSettings,
                 livePlayer = livePlayer,
                 onConnect = ::connectClicked,
                 onShareLog = ::shareLog,
@@ -115,12 +118,13 @@ private fun AppRoot(
     probe: ProbeController,
     live: LiveViewController,
     controls: CameraController,
+    cameraSettings: CameraSettings,
     livePlayer: ExoRtspPlayer,
     onConnect: () -> Unit,
     onShareLog: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    // "status", "live" or "probe"
+    // "status", "live", "settings" or "probe"
     var screen by rememberSaveable { mutableStateOf("status") }
     BackHandler(enabled = screen != "status") { screen = "status" }
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
@@ -139,12 +143,17 @@ private fun AppRoot(
                     controls = controls,
                     onBack = { screen = "status" },
                 )
+                "settings" -> SettingsScreen(
+                    settings = cameraSettings,
+                    onBack = { screen = "status" },
+                )
                 else -> StatusScreen(
                     session = session,
                     onConnect = onConnect,
                     onOpenSettings = onOpenSettings,
                     onOpenProbe = { screen = "probe" },
                     onOpenLive = { screen = "live" },
+                    onOpenCameraSettings = { screen = "settings" },
                 )
             }
         }

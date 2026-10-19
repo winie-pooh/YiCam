@@ -128,7 +128,7 @@ class FakeCameraServer : AutoCloseable {
                 """{ "rval": 0, "msg_id": 257, "param": $validToken }"""
             }
             rejectEveryCommand || token != validToken -> """{"rval":-4,"msg_id":$msgId}"""
-            msgId == 3 -> settings()
+            msgId == 3 -> if (request["param"] is String) options(request["param"] as String) else settings()
             msgId == 5 -> sdReply(request["type"] == "total")
             msgId == 13 -> Fixtures.BATTERY_REPLY
             forcedRval[msgId] != null -> """{"rval":${forcedRval[msgId]},"msg_id":$msgId}"""
@@ -181,6 +181,16 @@ class FakeCameraServer : AutoCloseable {
         if (key == null || value == null) return """{"rval":-1,"msg_id":2}"""
         settingValues[key] = value
         return """{"rval":0,"msg_id":2}"""
+    }
+
+    /** msg_id 3 with param=key: the allowed values; PAL changes the resolution lists; unknown keys are read only. */
+    private fun options(key: String): String {
+        val pal = settingValues["video_standard"] == "PAL"
+        val text = when {
+            pal && (key == "video_resolution" || key == "timelapse_video_resolution") -> Fixtures.PAL_RESOLUTIONS
+            else -> Fixtures.OPTION_TEXTS[key] ?: "readonly:"
+        }
+        return Fixtures.optionsReply(key, text)
     }
 
     private fun sdReply(total: Boolean): String = when {

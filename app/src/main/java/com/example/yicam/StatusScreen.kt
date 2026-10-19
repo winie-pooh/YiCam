@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, the read-only list of camera settings, Connect/Disconnect/Refresh buttons, the Live view button and the menu entry to the probe screen.
+ * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, Connect/Disconnect/Refresh buttons, the Live view and Camera settings buttons and the menu entry to the probe screen.
  * Not responsible for: any link or protocol logic (CameraSession.kt), the dev probe screen (ProbeScreen.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -32,9 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 @Composable
 fun StatusScreen(
@@ -43,10 +39,10 @@ fun StatusScreen(
     onOpenSettings: () -> Unit,
     onOpenProbe: () -> Unit,
     onOpenLive: () -> Unit,
+    onOpenCameraSettings: () -> Unit,
 ) {
     val state by session.state.collectAsState()
     val status by session.status.collectAsState()
-    val snapshot by session.settings.collectAsState()
     var menuOpen by remember { mutableStateOf(false) }
     val canConnect = state is SessionState.Disconnected ||
         state is SessionState.Error ||
@@ -107,23 +103,11 @@ fun StatusScreen(
             modifier = Modifier.fillMaxWidth(),
         ) { Text(stringResource(R.string.button_live_view)) }
 
-        Text(stringResource(R.string.title_settings_snapshot), style = MaterialTheme.typography.titleSmall)
-        val entries = remember(snapshot) {
-            snapshot?.values?.toSortedMap()?.entries?.toList() ?: emptyList()
-        }
-        if (entries.isEmpty()) {
-            Text(stringResource(R.string.no_data_yet))
-        } else {
-            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                items(entries) { entry ->
-                    Text(
-                        text = "${entry.key} = ${entry.value}",
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                    )
-                }
-            }
-        }
+        Button(
+            onClick = onOpenCameraSettings,
+            enabled = state is SessionState.Connected,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text(stringResource(R.string.button_camera_settings)) }
     }
 }
 

@@ -1,5 +1,5 @@
 /**
- * Responsible for: turning camera replies and events (battery, SD memory, settings) into plain values, tolerant to numbers or text, and leaving secrets out.
+ * Responsible for: turning camera replies and events (battery, SD memory, settings and their allowed values) into plain values, tolerant to numbers or text, and leaving secrets out.
  * Not responsible for: sending commands or keeping state (CameraSession.kt) or the models themselves (CameraStatus.kt).
  */
 package com.example.yicam
@@ -52,6 +52,36 @@ object StatusParser {
         }
         return result
     }
+
+    /**
+     * What the camera allows for one setting. [settable] false means read only. [values] is empty for free text
+     * (also for the camera clock, where the camera puts the current time after "settable:").
+     */
+    class Options(val settable: Boolean, val values: List<String>)
+
+    /**
+     * Reply of msg_id 3 with param=key (seen in the phone log of 2026-10-19):
+     * {"param":[{"video_standard":"settable:NTSC#PAL"}]}, "readonly:a#b", "readonly:" or "settable:".
+     * Null if the reply has no entry for [key] or the text has neither prefix.
+     */
+    fun options(reply: CameraMessage.Response, key: String): Options? {
+        if (!reply.isOk) return null
+        val items = reply.paramList() ?: return null
+        for (item in items) {
+            val text = textOf((item as? Map<*, *>)?.get(key)) ?: continue
+            val settable = when {
+                text.startsWith(SETTABLE) -> true
+                text.startsWith(READONLY) -> false
+                else -> return null
+            }
+            val rest = text.substring(if (settable) SETTABLE.length else READONLY.length)
+            return Options(settable, if (rest.isEmpty()) emptyList() else rest.split('#').filter { it.isNotEmpty() })
+        }
+        return null
+    }
+
+    private const val SETTABLE = "settable:"
+    private const val READONLY = "readonly:"
 
     private fun textOf(value: Any?): String? = when (value) {
         is String -> value

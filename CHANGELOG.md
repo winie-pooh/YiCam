@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.3.0 - camera settings screen
+- Phone log (Options): msg_id 3 with param=key answers {"param":[{"key":"settable:a#b#c"}]}; "readonly:..." for read-only keys; "settable:" with nothing after it for free text. Recorded here as a fact; the parser is StatusParser.options.
+- SettingsCatalog (new): hidden keys (capture_mode and system_mode have their own controls; camera_clock has the Sync button; Wi-Fi name and password, reboot, factory reset, running self-timer, timelapse_video_duration are not offered), groups (Video, Photo, Sound and LED, Power/Wi-Fi/system, Other), order.
+- CameraSettings (new): reads the allowed values of every visible key one after the other; shows only settable keys with at least two values; on/off keys are switches. Apply sends only changed values (msg_id 2), the video standard first, then re-reads the resolution lists; a refused value stays marked and its key is named. Blocked while the camera records or captures. "Set camera clock" sends the phone time (msg_id 2, camera_clock; the camera's reply to it is not verified yet).
+- SettingsScreen (new) and a "Camera settings" button on the status screen instead of the read-only list. Names of settings in values, values-es, values-uk (setting_<key>; an unknown key is shown by its key).
+- Not included: format SD card and reboot (the command format is not verified), free-text settings.
+- Tests: CameraSettingsTest (17). Total 158 pass on the JVM here. The Compose files are not compiled here.
+
 ## 0.2.1 - the Stop recording button
 - Phone log 0.2.0: while recording the camera reports app_status "record" (not "recording"), so the app never showed "Stop recording" and the live view did not know about the recording. Both now accept "record" (and "recording").
 - The fake camera now answers "record" during a recording, as the real one does. Photo, time-lapse, modes and zoom worked on the phone (steps 1, 3, 5, 6).

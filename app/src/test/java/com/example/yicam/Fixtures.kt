@@ -41,6 +41,31 @@ object Fixtures {
     const val VIDEO_RECORD_COMPLETE_EVENT =
         """{ "msg_id": 7, "type": "video_record_complete", "param": "\/tmp\/fuse_d\/DCIM\/101MEDIA\/YDXJ0042.mp4" }"""
 
+    /** Reply of msg_id 3 with param=key: [value] is the camera's own text, e.g. "settable:NTSC#PAL" (phone log 2026-10-19). */
+    fun optionsReply(key: String, value: String): String =
+        """{ "rval": 0, "msg_id": 3, "param": [ { "$key": "${value.replace("/", "\\/")}" } ] }"""
+
+    /** Real answers of the camera for some keys; every other key answers "readonly:". */
+    val OPTION_TEXTS: Map<String, String> = mapOf(
+        "camera_clock" to "settable:2008-03-30 09:31:22",
+        "video_standard" to "settable:NTSC#PAL",
+        "app_status" to "readonly:idle#vf#record#recording#capture#precise_cont_capturing#burst_capturing#precise_capturing#operation_done",
+        "video_resolution" to "settable:1920x1080 60P 16:9#1920x1080 30P 16:9#1280x720 120P 16:9#848x480 240P 16:9",
+        "video_stamp" to "settable:off#date#time#date/time",
+        "capture_mode" to "settable:precise quality#precise quality cont.#burst quality#precise self quality",
+        "timelapse_photo" to "readonly:off#2",
+        "buzzer_volume" to "settable:high#low#mute",
+        "buzzer_ring" to "settable:on#off",
+        "burst_capture_number" to "settable:3 p / s#5 p / s#7 p / s#7 p / 2s",
+        "wifi_ssid" to "settable:",
+        "sd_card_status" to "readonly:",
+        "system_mode" to "settable:capture#record",
+        "timelapse_video_duration" to "settable:",
+    )
+
+    /** The resolutions a PAL camera offers (shape of the real list; the 50P values are assumed). */
+    const val PAL_RESOLUTIONS = "settable:1920x1080 50P 16:9#1920x1080 25P 16:9#1280x720 100P 16:9"
+
     const val CHDIR_REPLY = """{ "rval": 0, "msg_id": 1283, "pwd": "\/tmp\/fuse_d\/DCIM" }"""
 
     const val START_PREVIEW_REPLY = """{"rval":0,"msg_id":259}"""

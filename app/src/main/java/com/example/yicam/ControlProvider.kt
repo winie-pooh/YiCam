@@ -1,6 +1,6 @@
 /**
- * Responsible for: creating the one CameraController of the app, so the controls keep their state when the activity is recreated.
- * Not responsible for: the control logic (CameraController.kt) or the screen (ControlPanel.kt).
+ * Responsible for: creating the one CameraController and the one CameraSettings of the app, so they keep their state when the activity is recreated.
+ * Not responsible for: the control logic (CameraController.kt), the settings logic (CameraSettings.kt) or the screens (ControlPanel.kt, SettingsScreen.kt).
  */
 package com.example.yicam
 
@@ -12,6 +12,17 @@ import kotlinx.coroutines.SupervisorJob
 object ControlProvider {
     @Volatile
     private var instance: CameraController? = null
+
+    @Volatile
+    private var settingsInstance: CameraSettings? = null
+
+    fun settings(context: Context): CameraSettings =
+        settingsInstance ?: synchronized(this) {
+            settingsInstance ?: CameraSettings(
+                SessionProvider.get(context.applicationContext),
+                CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            ).also { settingsInstance = it }
+        }
 
     fun get(context: Context): CameraController =
         instance ?: synchronized(this) {
