@@ -1,5 +1,5 @@
 /**
- * Responsible for: the camera settings screen logic: asking the camera for the allowed values of each setting (msg_id 3 with param=key), keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
+ * Responsible for: the camera settings screen logic: asking the camera for the allowed values of each setting (msg_id 3 with param=key), marking the ones the camera locks at the moment, keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
  * Not responsible for: drawing (SettingsScreen.kt), the camera mode, photo, record and zoom controls (CameraController.kt), or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -26,6 +26,8 @@ data class SettingRow(
     val options: List<String>,
     val current: String,
     val edited: String? = null,
+    /** The camera lists values but does not allow a change now (it answers "readonly:" while the preview is on). */
+    val locked: Boolean = false,
 ) {
     val value: String get() = edited ?: current
     val isSwitch: Boolean get() = SettingsCatalog.isSwitch(options)
@@ -102,7 +104,7 @@ class CameraSettings(
                 for ((key, value) in snapshot.values) {
                     if (!SettingsCatalog.isVisible(key)) continue
                     val options = readOptions(api, key) ?: continue
-                    rows.add(SettingRow(key, SettingsCatalog.groupOf(key), options, value))
+                    rows.add(SettingRow(key, SettingsCatalog.groupOf(key), options.values, value, locked = !options.settable))
                     local.update { it.copy(rows = sorted(rows)) }
                 }
                 local.update { it.copy(loading = false, rows = sorted(rows)) }
@@ -117,7 +119,7 @@ class CameraSettings(
     fun edit(key: String, value: String) {
         local.update { own ->
             own.copy(rows = own.rows.map { row ->
-                if (row.key != key) row else row.copy(edited = value.takeIf { it != row.current })
+                if (row.key != key || row.locked) row else row.copy(edited = value.takeIf { it != row.current })
             })
         }
     }
@@ -142,7 +144,7 @@ class CameraSettings(
             local.update { it.copy(note = SettingsMessage(SettingsNote.CAMERA_BUSY)) }
             return
         }
-        val changed = local.value.rows.filter { it.edited != null }
+        val changed = local.value.rows.filter { it.edited != null && !it.locked }
             .sortedBy { if (it.key == SettingsCatalog.VIDEO_STANDARD) 0 else 1 }
         if (changed.isEmpty()) return
         local.update { it.copy(applying = true, note = null) }
@@ -206,11 +208,11 @@ class CameraSettings(
 
     // ---- internals ---------------------------------------------------------------------------
 
-    /** The allowed values, or null if the setting is read only, free text or has nothing to choose from. */
-    private suspend fun readOptions(api: CameraApi, key: String): List<String>? {
+    /** The allowed values (settable or locked), or null if the setting is free text or has nothing to choose from. */
+    private suspend fun readOptions(api: CameraApi, key: String): StatusParser.Options? {
         val reply = api.send(Cmd.GET_SETTINGS, listOf("param" to key))
         val options = StatusParser.options(reply, key) ?: return null
-        return options.values.takeIf { options.settable && it.size >= 2 }
+        return options.takeIf { it.values.size >= 2 }
     }
 
     /** After a video standard change the resolution lists are different, so they are read again. */
@@ -218,7 +220,7 @@ class CameraSettings(
         for (key in SettingsCatalog.DEPENDS_ON_VIDEO_STANDARD) {
             val options = readOptions(api, key) ?: continue
             local.update { own ->
-                own.copy(rows = own.rows.map { if (it.key == key) it.copy(options = options) else it })
+                own.copy(rows = own.rows.map { if (it.key == key) it.copy(options = options.values, locked = !options.settable) else it })
             }
         }
     }

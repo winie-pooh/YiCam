@@ -189,9 +189,14 @@ class FakeCameraServer : AutoCloseable {
         val text = when {
             pal && (key == "video_resolution" || key == "timelapse_video_resolution") -> Fixtures.PAL_RESOLUTIONS
             else -> Fixtures.OPTION_TEXTS[key] ?: "readonly:"
+        }.let { text ->
+            // While the preview is on the real camera lists these values but calls them "readonly" (phone log 2026-10-19).
+            if (appStatus == "vf" && key in PREVIEW_LOCKED && text.startsWith("settable:")) "readonly:" + text.removePrefix("settable:") else text
         }
         return Fixtures.optionsReply(key, text)
     }
+
+    private val PREVIEW_LOCKED = setOf("video_standard", "video_quality", "video_stamp", "timelapse_video")
 
     private fun sdReply(total: Boolean): String = when {
         tinySd && total -> Fixtures.SMALL_SD_TOTAL_REPLY

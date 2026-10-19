@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.3.1 - settings the camera locks no longer disappear
+- Phone log 0.3.0: with the preview on (app_status "vf") the camera answers msg_id 2 video_standard with rval -21, and for video_standard, video_quality, video_stamp and timelapse_video it reports "readonly:" followed by the usual list. 0.3.0 hid read-only keys, so these rows vanished.
+- Now such rows stay in the list, greyed out and not editable, with one line of explanation; the list is read again every time the screen opens. A key that is read only even when idle (timelapse_photo) is hidden.
+- Not verified: how to leave the preview state (Disconnect then Connect gave "idle" in earlier logs). Tests: 3 new (161 total).
+
 ## 0.3.0 - camera settings screen
 - Phone log (Options): msg_id 3 with param=key answers {"param":[{"key":"settable:a#b#c"}]}; "readonly:..." for read-only keys; "settable:" with nothing after it for free text. Recorded here as a fact; the parser is StatusParser.options.
 - SettingsCatalog (new): hidden keys (capture_mode and system_mode have their own controls; camera_clock has the Sync button; Wi-Fi name and password, reboot, factory reset, running self-timer, timelapse_video_duration are not offered), groups (Video, Photo, Sound and LED, Power/Wi-Fi/system, Other), order.

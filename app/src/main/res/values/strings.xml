@@ -117,4 +117,5 @@
     <string name="setting_system_default_mode">Mode at power on</string>
     <string name="setting_rc_button_mode">Remote button mode</string>
     <string name="setting_save_log">Save camera log</string>
+    <string name="settings_locked_hint">Greyed-out settings are locked by the camera right now (the preview is on).</string>
 </resources>

@@ -51,6 +51,7 @@ object Fixtures {
         "video_standard" to "settable:NTSC#PAL",
         "app_status" to "readonly:idle#vf#record#recording#capture#precise_cont_capturing#burst_capturing#precise_capturing#operation_done",
         "video_resolution" to "settable:1920x1080 60P 16:9#1920x1080 30P 16:9#1280x720 120P 16:9#848x480 240P 16:9",
+        "video_quality" to "settable:S.Fine#Fine#Normal",
         "video_stamp" to "settable:off#date#time#date/time",
         "capture_mode" to "settable:precise quality#precise quality cont.#burst quality#precise self quality",
         "timelapse_photo" to "readonly:off#2",

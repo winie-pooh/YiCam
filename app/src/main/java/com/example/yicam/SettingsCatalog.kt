@@ -10,12 +10,12 @@ object SettingsCatalog {
     /**
      * Never shown as a row: controls with their own place (capture_mode, system_mode, camera_clock), things that must not be
      * changed here (Wi-Fi name and password, reboot, factory reset, a running self-timer) and read-only status keys.
-     * timelapse_video_duration is free text with an unknown format, so it stays hidden until the format is known.
+     * timelapse_video_duration is free text with an unknown format, so it stays hidden until the format is known; timelapse_photo is read only even when the camera is idle.
      */
     val HIDDEN: Set<String> = setOf(
         "capture_mode", "system_mode", "camera_clock", "precise_self_running",
         "wifi_ssid", "wifi_password", "serial_number", "dev_reboot", "restore_factory_settings",
-        "app_status", "timelapse_video_duration",
+        "app_status", "timelapse_video_duration", "timelapse_photo",
     )
 
     /** Settings whose allowed values change when the video standard changes. */

@@ -120,7 +120,7 @@ class CameraSettingsTest {
         connectAndLoad()
         val keys = state().rows.map { it.key }.toSet()
         assertEquals(
-            setOf("video_standard", "video_resolution", "video_stamp", "buzzer_volume", "buzzer_ring", "burst_capture_number"),
+            setOf("video_standard", "video_resolution", "video_quality", "video_stamp", "buzzer_volume", "buzzer_ring", "burst_capture_number"),
             keys,
         )
         assertEquals(SettingGroup.VIDEO, row("video_resolution").group)
@@ -145,7 +145,7 @@ class CameraSettingsTest {
     fun rows_areInCatalogOrder() = test {
         connectAndLoad()
         val keys = state().rows.map { it.key }
-        assertEquals(listOf("video_standard", "video_resolution", "video_stamp", "burst_capture_number", "buzzer_volume", "buzzer_ring"), keys)
+        assertEquals(listOf("video_standard", "video_resolution", "video_quality", "video_stamp", "burst_capture_number", "buzzer_volume", "buzzer_ring"), keys)
     }
 
     @Test
@@ -248,6 +248,44 @@ class CameraSettingsTest {
         delay(200)
         assertEquals(0, sentSettings().size)
         assertNull(state().note)
+    }
+
+    // ---- locked by the preview -----------------------------------------------------------------
+
+    @Test
+    fun whilePreviewIsOn_theCameraLocksSomeSettings_theyStayInTheList() = test {
+        server.appStatus = "vf"
+        connectAndLoad()
+        for (key in listOf("video_standard", "video_quality", "video_stamp")) {
+            assertTrue("$key should be locked", row(key).locked)
+        }
+        assertFalse(row("video_resolution").locked)
+        assertFalse(row("buzzer_volume").locked)
+        assertEquals(listOf("NTSC", "PAL"), row("video_standard").options)
+    }
+
+    @Test
+    fun lockedRow_cannotBeEdited_andIsNotSent() = test {
+        server.appStatus = "vf"
+        connectAndLoad()
+        settings.edit("video_standard", "PAL")
+        delay(100)
+        assertEquals(0, state().changedCount)
+        settings.apply()
+        delay(100)
+        assertEquals(0, sentSettings().size)
+    }
+
+    @Test
+    fun reload_afterThePreviewStopped_unlocksTheRows() = test {
+        server.appStatus = "vf"
+        connectAndLoad()
+        assertTrue(row("video_standard").locked)
+        server.appStatus = "idle"
+        session.refresh()
+        waitUntil("idle") { session.status.value.appStatus == "idle" }
+        settings.load()
+        waitUntil("unlocked") { !state().loading && state().rows.isNotEmpty() && !row("video_standard").locked }
     }
 
     // ---- clock ---------------------------------------------------------------------------------

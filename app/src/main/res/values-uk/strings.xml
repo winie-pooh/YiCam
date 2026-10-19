@@ -116,4 +116,5 @@
     <string name="setting_system_default_mode">Режим при вмиканні</string>
     <string name="setting_rc_button_mode">Режим кнопки пульта</string>
     <string name="setting_save_log">Зберігати лог камери</string>
+    <string name="settings_locked_hint">Сірі налаштування камера зараз заблокувала (увімкнено перегляд).</string>
 </resources>

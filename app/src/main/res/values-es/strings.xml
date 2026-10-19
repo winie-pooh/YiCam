@@ -116,4 +116,5 @@
     <string name="setting_system_default_mode">Modo al encender</string>
     <string name="setting_rc_button_mode">Modo del botón remoto</string>
     <string name="setting_save_log">Guardar registro de la cámara</string>
+    <string name="settings_locked_hint">Los ajustes en gris están bloqueados por la cámara ahora (la vista previa está activa).</string>
 </resources>

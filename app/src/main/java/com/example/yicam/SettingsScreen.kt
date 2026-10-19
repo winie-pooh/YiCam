@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized camera settings screen: the list of changeable settings in groups (switch for on/off, a choice dialog for the rest), the Sync time button, Apply and Discard, the result note.
+ * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting), the Sync time button, Apply and Discard, the result note.
  * Not responsible for: reading or sending settings (CameraSettings.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -39,10 +40,11 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
     val state by settings.state.collectAsState()
     var dialogFor by remember { mutableStateOf<String?>(null) }
 
-    // Read the allowed values when the screen opens (not again after a rotation).
+    // Read the allowed values when the screen opens.
     LaunchedEffect(Unit) {
         val s = settings.state.value
-        if (s.available && s.rows.isEmpty() && !s.loading) settings.load()
+        // The camera locks some settings while the preview is on, so the list is read again on every entry.
+        if (s.available && s.changedCount == 0 && !s.loading) settings.load()
     }
 
     Column(
@@ -62,6 +64,7 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
         }
 
         if (state.cameraBusy) Text(stringResource(R.string.settings_busy), color = MaterialTheme.colorScheme.error)
+        if (state.rows.any { it.locked }) Text(stringResource(R.string.settings_locked_hint), style = MaterialTheme.typography.bodySmall)
         if (state.loading) Text(stringResource(R.string.settings_loading, state.rows.size))
 
         OutlinedButton(
@@ -99,7 +102,7 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
                     }
                 }
                 item(key = row.key) {
-                    SettingRowView(row, enabled = !state.applying && !state.cameraBusy, onSwitch = { settings.edit(row.key, if (it) "on" else "off") }, onPick = { dialogFor = row.key })
+                    SettingRowView(row, enabled = !row.locked && !state.applying && !state.cameraBusy, onSwitch = { settings.edit(row.key, if (it) "on" else "off") }, onPick = { dialogFor = row.key })
                 }
             }
         }
@@ -148,9 +151,10 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
 @Composable
 private fun SettingRowView(row: SettingRow, enabled: Boolean, onSwitch: (Boolean) -> Unit, onPick: () -> Unit) {
     val changedMark = if (row.edited != null) " \u2022" else ""
+    val labelColor = if (row.locked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else Color.Unspecified
     if (row.isSwitch) {
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(settingLabel(row.key) + changedMark, modifier = Modifier.weight(1f))
+            Text(settingLabel(row.key) + changedMark, modifier = Modifier.weight(1f), color = labelColor)
             Switch(checked = row.value == "on", onCheckedChange = onSwitch, enabled = enabled)
         }
     } else {
@@ -158,8 +162,8 @@ private fun SettingRowView(row: SettingRow, enabled: Boolean, onSwitch: (Boolean
             modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, onClick = onPick).padding(vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(settingLabel(row.key) + changedMark, modifier = Modifier.weight(1f))
-            Text(row.value, style = MaterialTheme.typography.titleSmall)
+            Text(settingLabel(row.key) + changedMark, modifier = Modifier.weight(1f), color = labelColor)
+            Text(row.value, style = MaterialTheme.typography.titleSmall, color = labelColor)
         }
     }
 }
