@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.3.2 - translated values, video standard help, Wi-Fi choice, unlock
+- Values of settings are shown translated (for example led_mode "all enable" -> "All on"); resolutions, NTSC/PAL, S.Fine and similar stay as the camera writes them. A value without a translation is shown as is. Strings opt_<key>_<value> and opt_<value> in values, values-es, values-uk.
+- Video standard has an explanation under it (choose by the mains frequency: PAL 50 Hz, NTSC 60 Hz).
+- Phone logs 0.3.1: with the preview on the standard is locked ("readonly:"); a new session starts with "idle" and the standard can be changed (NTSC to PAL and back worked, the resolution lists changed: 50P/25P/100P/200P). New "Unlock" button on the settings screen starts a new session and reads the list again.
+- Status screen: "Choose Wi-Fi network, then connect" opens the system Wi-Fi list (Android 10+: the panel; older: Wi-Fi settings) and connects when the user comes back.
+- The "(s)" unit was removed from the record_photo_time name because it was a guess.
+- Tests: 2 new (163 total). The Compose and Activity files are not compiled here.
+
 ## 0.3.1 - settings the camera locks no longer disappear
 - Phone log 0.3.0: with the preview on (app_status "vf") the camera answers msg_id 2 video_standard with rval -21, and for video_standard, video_quality, video_stamp and timelapse_video it reports "readonly:" followed by the usual list. 0.3.0 hid read-only keys, so these rows vanished.
 - Now such rows stay in the list, greyed out and not editable, with one line of explanation; the list is read again every time the screen opens. A key that is read only even when idle (timelapse_photo) is hidden.

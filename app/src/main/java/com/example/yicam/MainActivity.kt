@@ -1,9 +1,10 @@
 /**
- * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, opening the system Wi-Fi list before connecting, telling the session when the app goes to the background and stopping the live view then, Share log.
  * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -41,6 +42,10 @@ class MainActivity : ComponentActivity() {
             if (granted) session.connect() else session.onPermissionDenied()
         }
 
+    /** Opens the system Wi-Fi list; when the user comes back, the app connects. */
+    private val wifiLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { connectClicked() }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -60,6 +65,7 @@ class MainActivity : ComponentActivity() {
                 cameraSettings = cameraSettings,
                 livePlayer = livePlayer,
                 onConnect = ::connectClicked,
+                onChooseWifi = ::chooseWifi,
                 onShareLog = ::shareLog,
                 onOpenSettings = ::openAppSettings,
             )
@@ -87,6 +93,16 @@ class MainActivity : ComponentActivity() {
             permissionLauncher.launch(LOCAL_NETWORK_PERMISSION)
         } else {
             session.connect()
+        }
+    }
+
+    /** The Wi-Fi panel (Android 10+) lets the user pick the camera network without leaving the app; older versions open the Wi-Fi settings. */
+    private fun chooseWifi() {
+        val panel = Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
+        try {
+            wifiLauncher.launch(panel)
+        } catch (_: ActivityNotFoundException) {
+            wifiLauncher.launch(Intent(Settings.ACTION_WIFI_SETTINGS))
         }
     }
 
@@ -121,6 +137,7 @@ private fun AppRoot(
     cameraSettings: CameraSettings,
     livePlayer: ExoRtspPlayer,
     onConnect: () -> Unit,
+    onChooseWifi: () -> Unit,
     onShareLog: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -150,6 +167,7 @@ private fun AppRoot(
                 else -> StatusScreen(
                     session = session,
                     onConnect = onConnect,
+                    onChooseWifi = onChooseWifi,
                     onOpenSettings = onOpenSettings,
                     onOpenProbe = { screen = "probe" },
                     onOpenLive = { screen = "live" },

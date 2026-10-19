@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, Connect/Disconnect/Refresh buttons, the Live view and Camera settings buttons and the menu entry to the probe screen.
+ * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, Connect/Disconnect/Refresh buttons, the "choose Wi-Fi, then connect" button, the Live view and Camera settings buttons and the menu entry to the probe screen.
  * Not responsible for: any link or protocol logic (CameraSession.kt), the dev probe screen (ProbeScreen.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
@@ -40,6 +40,7 @@ fun StatusScreen(
     onOpenProbe: () -> Unit,
     onOpenLive: () -> Unit,
     onOpenCameraSettings: () -> Unit,
+    onChooseWifi: () -> Unit,
 ) {
     val state by session.state.collectAsState()
     val status by session.status.collectAsState()
@@ -95,6 +96,12 @@ fun StatusScreen(
                 enabled = state is SessionState.Connected,
                 modifier = Modifier.weight(1f),
             ) { Text(stringResource(R.string.button_refresh)) }
+        }
+
+        if (canConnect) {
+            OutlinedButton(onClick = onChooseWifi, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.button_choose_wifi))
+            }
         }
 
         Button(

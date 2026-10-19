@@ -1,5 +1,5 @@
 /**
- * Responsible for: the camera settings screen logic: asking the camera for the allowed values of each setting (msg_id 3 with param=key), marking the ones the camera locks at the moment, keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
+ * Responsible for: the camera settings screen logic: asking the camera for the allowed values of each setting (msg_id 3 with param=key), marking the ones the camera locks at the moment, unlocking them by starting a new session (the camera leaves the preview then), keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
  * Not responsible for: drawing (SettingsScreen.kt), the camera mode, photo, record and zoom controls (CameraController.kt), or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /** One setting the camera lets us change. [edited] is the user's unsaved choice. */
 data class SettingRow(
@@ -128,6 +130,28 @@ class CameraSettings(
         local.update { own -> own.copy(rows = own.rows.map { it.copy(edited = null) }) }
     }
 
+    /**
+     * The camera locks some settings while the preview is on and leaves that state when a new session starts
+     * (seen in the phone logs: every new session begins with app_status "idle"). Starts a new session and reads the list again.
+     */
+    fun unlock() {
+        if (local.value.loading || local.value.applying) return
+        val oldRead = session.settings.value?.readAtMs
+        local.update { it.copy(applying = true, note = null) }
+        scope.launch {
+            try {
+                session.connect()
+                withTimeoutOrNull(UNLOCK_WAIT_MS) {
+                    session.state.first { it is SessionState.Connected }
+                    session.settings.first { it != null && it.readAtMs != oldRead }
+                }
+            } finally {
+                local.update { it.copy(applying = false) }
+            }
+            load()
+        }
+    }
+
     fun dismissNote() {
         local.update { it.copy(note = null) }
     }
@@ -229,4 +253,8 @@ class CameraSettings(
         rows.sortedWith(compareBy({ SettingsCatalog.sortIndex(it.key) }, { it.key }))
 
     private fun message(e: Exception): String = e.message ?: e.javaClass.simpleName
+
+    private companion object {
+        const val UNLOCK_WAIT_MS = 15_000L
+    }
 }

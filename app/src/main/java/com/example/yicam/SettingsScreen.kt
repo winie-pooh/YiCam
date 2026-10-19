@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting), the Sync time button, Apply and Discard, the result note.
+ * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting, with an Unlock button), explanations and translated values, the Sync time button, Apply and Discard, the result note.
  * Not responsible for: reading or sending settings (CameraSettings.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
@@ -64,7 +64,14 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
         }
 
         if (state.cameraBusy) Text(stringResource(R.string.settings_busy), color = MaterialTheme.colorScheme.error)
-        if (state.rows.any { it.locked }) Text(stringResource(R.string.settings_locked_hint), style = MaterialTheme.typography.bodySmall)
+        if (state.rows.any { it.locked }) {
+            Text(stringResource(R.string.settings_locked_hint), style = MaterialTheme.typography.bodySmall)
+            OutlinedButton(
+                onClick = settings::unlock,
+                enabled = state.available && !state.loading && !state.applying,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(stringResource(R.string.button_unlock)) }
+        }
         if (state.loading) Text(stringResource(R.string.settings_loading, state.rows.size))
 
         OutlinedButton(
@@ -137,7 +144,7 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(selected = option == dialogRow.value, onClick = null)
-                            Text(option, modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 10.dp))
+                            Text(optionLabel(dialogRow.key, option), modifier = Modifier.padding(start = 8.dp, top = 10.dp, bottom = 10.dp))
                         }
                     }
                 }
@@ -163,8 +170,12 @@ private fun SettingRowView(row: SettingRow, enabled: Boolean, onSwitch: (Boolean
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(settingLabel(row.key) + changedMark, modifier = Modifier.weight(1f), color = labelColor)
-            Text(row.value, style = MaterialTheme.typography.titleSmall, color = labelColor)
+            Text(optionLabel(row.key, row.value), style = MaterialTheme.typography.titleSmall, color = labelColor)
         }
+    }
+    val hint = settingHint(row.key)
+    if (hint != null) {
+        Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
     }
 }
 
@@ -174,6 +185,31 @@ private fun settingLabel(key: String): String {
     val context = LocalContext.current
     val id = context.resources.getIdentifier("setting_$key", "string", context.packageName)
     return if (id != 0) stringResource(id) else key
+}
+
+/** An explanation under a setting (string setting_hint_<key>), or null if there is none. */
+@Composable
+private fun settingHint(key: String): String? {
+    val context = LocalContext.current
+    val id = context.resources.getIdentifier("setting_hint_$key", "string", context.packageName)
+    return if (id != 0) stringResource(id) else null
+}
+
+/**
+ * The translated text of a value: string opt_<key>_<value> (value written in lower case with "_" between words),
+ * then opt_<value>, then seconds and minutes with a unit; any other value (resolutions, NTSC, S.Fine, ...) is shown as the camera writes it.
+ */
+@Composable
+private fun optionLabel(key: String, value: String): String {
+    val context = LocalContext.current
+    val normal = SettingsCatalog.normalizeValue(value)
+    for (name in listOf("opt_${key}_$normal", "opt_$normal")) {
+        val id = context.resources.getIdentifier(name, "string", context.packageName)
+        if (id != 0) return stringResource(id)
+    }
+    SettingsCatalog.secondsOf(value)?.let { return stringResource(R.string.unit_sec, it) }
+    SettingsCatalog.minutesOf(value)?.let { return stringResource(R.string.unit_minutes, it) }
+    return value
 }
 
 private fun groupTitle(group: SettingGroup): Int = when (group) {

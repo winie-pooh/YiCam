@@ -72,6 +72,19 @@ class CameraSettingsTest {
         waitUntil("loaded") { settings.state.value.rows.isNotEmpty() && !settings.state.value.loading }
     }
 
+    /** The preview is on: a new session would end it, so the camera is put into "vf" after connecting. */
+    private suspend fun connectWhilePreviewIsOn() {
+        session.connect()
+        waitUntil("connected and settings read") {
+            session.state.value is SessionState.Connected && session.settings.value != null
+        }
+        server.appStatus = "vf"
+        session.refresh()
+        waitUntil("vf") { session.status.value.appStatus == "vf" }
+        settings.load()
+        waitUntil("loaded") { settings.state.value.rows.isNotEmpty() && !settings.state.value.loading }
+    }
+
     private fun state() = settings.state.value
     private fun row(key: String) = state().rows.first { it.key == key }
     private fun sentSettings() = server.received.filter { it.contains("\"msg_id\":2,") }
@@ -250,12 +263,25 @@ class CameraSettingsTest {
         assertNull(state().note)
     }
 
+    // ---- value names -------------------------------------------------------------------------
+
+    @Test
+    fun valueNames_forTranslationResources() {
+        assertEquals("all_enable", SettingsCatalog.normalizeValue("all enable"))
+        assertEquals("date_time", SettingsCatalog.normalizeValue("date/time"))
+        assertEquals("precise_quality_cont", SettingsCatalog.normalizeValue("precise quality cont."))
+        assertEquals("0.5", SettingsCatalog.secondsOf("0.5 sec"))
+        assertEquals("60", SettingsCatalog.secondsOf("60.0 sec")?.substringBefore('.'))
+        assertNull(SettingsCatalog.secondsOf("5s"))
+        assertEquals("10", SettingsCatalog.minutesOf("10 minutes"))
+        assertNull(SettingsCatalog.minutesOf("off"))
+    }
+
     // ---- locked by the preview -----------------------------------------------------------------
 
     @Test
     fun whilePreviewIsOn_theCameraLocksSomeSettings_theyStayInTheList() = test {
-        server.appStatus = "vf"
-        connectAndLoad()
+        connectWhilePreviewIsOn()
         for (key in listOf("video_standard", "video_quality", "video_stamp")) {
             assertTrue("$key should be locked", row(key).locked)
         }
@@ -266,8 +292,7 @@ class CameraSettingsTest {
 
     @Test
     fun lockedRow_cannotBeEdited_andIsNotSent() = test {
-        server.appStatus = "vf"
-        connectAndLoad()
+        connectWhilePreviewIsOn()
         settings.edit("video_standard", "PAL")
         delay(100)
         assertEquals(0, state().changedCount)
@@ -278,14 +303,23 @@ class CameraSettingsTest {
 
     @Test
     fun reload_afterThePreviewStopped_unlocksTheRows() = test {
-        server.appStatus = "vf"
-        connectAndLoad()
+        connectWhilePreviewIsOn()
         assertTrue(row("video_standard").locked)
         server.appStatus = "idle"
         session.refresh()
         waitUntil("idle") { session.status.value.appStatus == "idle" }
         settings.load()
         waitUntil("unlocked") { !state().loading && state().rows.isNotEmpty() && !row("video_standard").locked }
+    }
+
+    @Test
+    fun unlock_startsANewSession_andTheRowsAreEditable() = test {
+        connectWhilePreviewIsOn()
+        assertTrue(row("video_standard").locked)
+        val before = server.acceptedConnections.get()
+        settings.unlock()
+        waitUntil("unlocked") { !state().loading && !state().applying && state().rows.isNotEmpty() && !row("video_standard").locked }
+        assertTrue(server.acceptedConnections.get() > before)
     }
 
     // ---- clock ---------------------------------------------------------------------------------

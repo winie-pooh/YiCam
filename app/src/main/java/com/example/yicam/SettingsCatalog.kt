@@ -1,5 +1,5 @@
 /**
- * Responsible for: what the settings screen knows about camera setting keys: which are hidden, which group a key belongs to, the order inside a group and which values mean a switch.
+ * Responsible for: what the settings screen knows about camera setting keys: which are hidden, which group a key belongs to, the order inside a group and which values mean a switch, and how a value is turned into a resource name for its translation.
  * Not responsible for: reading or changing settings (CameraSettings.kt), drawing (SettingsScreen.kt) or the translated names (the strings.xml files: setting_<key>).
  */
 package com.example.yicam
@@ -58,4 +58,14 @@ object SettingsCatalog {
 
     /** on/off settings are drawn as a switch. */
     fun isSwitch(values: List<String>): Boolean = values.size == 2 && values.toSet() == setOf("on", "off")
+
+    /** "all enable" -> "all_enable", "date/time" -> "date_time": the end of a string resource name opt_<key>_<value>. */
+    fun normalizeValue(value: String): String =
+        value.lowercase().replace(Regex("[^a-z0-9]+"), "_").trim('_')
+
+    /** "0.5 sec" -> "0.5", else null. */
+    fun secondsOf(value: String): String? = Regex("""^(\d+(?:\.\d+)?) sec$""").find(value)?.groupValues?.get(1)
+
+    /** "10 minutes" -> "10", else null. */
+    fun minutesOf(value: String): String? = Regex("""^(\d+) minutes$""").find(value)?.groupValues?.get(1)
 }

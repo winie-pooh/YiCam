@@ -124,6 +124,8 @@ class FakeCameraServer : AutoCloseable {
 
         val reply = when {
             msgId == 257 -> {
+                // The real camera leaves the preview state when a new session starts (phone logs 2026-10-19/20).
+                if (appStatus == "vf") appStatus = "idle"
                 validToken = nextToken.getAndIncrement()
                 """{ "rval": 0, "msg_id": 257, "param": $validToken }"""
             }
