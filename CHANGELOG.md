@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.2.1 - the Stop recording button
+- Phone log 0.2.0: while recording the camera reports app_status "record" (not "recording"), so the app never showed "Stop recording" and the live view did not know about the recording. Both now accept "record" (and "recording").
+- The fake camera now answers "record" during a recording, as the real one does. Photo, time-lapse, modes and zoom worked on the phone (steps 1, 3, 5, 6).
+
 ## 0.2.0 - controls: photo, recording, time-lapse stop, modes, zoom
 - CameraController (new): msg_id 769 (photo), 513/514 (record start/stop), 770 (stop time-lapse), 2 (system_mode, capture_mode), 14/15 (zoom, at most one command per 150 ms, the latest value wins). One command at a time. The buttons follow the camera state (app_status, system_mode, capture_mode, precise_cont_capturing) and events (video_record_complete shows the file name).
 - CameraSession.requestSettingsRefresh (new): re-reads the settings after the app changed something.

@@ -266,7 +266,7 @@ class LiveViewController(
 
     private fun blockingProblem(): LiveProblem? {
         if (session.state.value !is SessionState.Connected || session.currentApi == null) return LiveProblem.NOT_CONNECTED
-        if (session.status.value.appStatus == "recording") return LiveProblem.RECORDING
+        if (session.status.value.appStatus in CameraController.RECORDING_STATUSES) return LiveProblem.RECORDING
         if (session.settings.value?.values?.get("preview_status") == "off") return LiveProblem.PREVIEW_DISABLED
         return null
     }

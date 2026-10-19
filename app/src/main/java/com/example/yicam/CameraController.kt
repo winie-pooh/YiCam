@@ -44,7 +44,7 @@ class CameraController(
             available = link is SessionState.Connected,
             mode = CameraMode.fromValue(values["system_mode"]),
             captureMode = CaptureMode.fromValue(values["capture_mode"]),
-            recording = appStatus == APP_RECORDING,
+            recording = appStatus in RECORDING_STATUSES,
             timelapseRunning = values["precise_cont_capturing"] == "on" || appStatus in CAPTURING_STATUSES,
             zoom = own.zoom,
             busy = own.busy,
@@ -166,8 +166,9 @@ class CameraController(
         }
     }
 
-    private companion object {
-        const val APP_RECORDING = "recording"
+    companion object {
+        /** The camera reports "record" while recording (phone log 2026-10-19); "recording" is kept in case other firmware uses it. */
+        val RECORDING_STATUSES = setOf("record", "recording")
         val CAPTURING_STATUSES = setOf("precise_cont_capturing", "burst_capturing", "precise_capturing")
     }
 }

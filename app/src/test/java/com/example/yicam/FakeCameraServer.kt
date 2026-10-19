@@ -138,7 +138,7 @@ class FakeCameraServer : AutoCloseable {
                 """{"rval":0,"msg_id":770}"""
             }
             msgId == 513 -> {
-                appStatus = "recording"
+                appStatus = "record"
                 """{"rval":0,"msg_id":513}"""
             }
             msgId == 514 -> {
