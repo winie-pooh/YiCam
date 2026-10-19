@@ -1,0 +1,61 @@
+/**
+ * Responsible for: what the settings screen knows about camera setting keys: which are hidden, which group a key belongs to, the order inside a group and which values mean a switch.
+ * Not responsible for: reading or changing settings (CameraSettings.kt), drawing (SettingsScreen.kt) or the translated names (the strings.xml files: setting_<key>).
+ */
+package com.example.yicam
+
+enum class SettingGroup { VIDEO, PHOTO, SOUND_LED, SYSTEM, OTHER }
+
+object SettingsCatalog {
+    /**
+     * Never shown as a row: controls with their own place (capture_mode, system_mode, camera_clock), things that must not be
+     * changed here (Wi-Fi name and password, reboot, factory reset, a running self-timer) and read-only status keys.
+     * timelapse_video_duration is free text with an unknown format, so it stays hidden until the format is known.
+     */
+    val HIDDEN: Set<String> = setOf(
+        "capture_mode", "system_mode", "camera_clock", "precise_self_running",
+        "wifi_ssid", "wifi_password", "serial_number", "dev_reboot", "restore_factory_settings",
+        "app_status", "timelapse_video_duration",
+    )
+
+    /** Settings whose allowed values change when the video standard changes. */
+    val DEPENDS_ON_VIDEO_STANDARD: Set<String> = setOf("video_resolution", "timelapse_video_resolution")
+
+    const val VIDEO_STANDARD = "video_standard"
+    const val CAMERA_CLOCK = "camera_clock"
+
+    private val ORDER: List<Pair<SettingGroup, List<String>>> = listOf(
+        SettingGroup.VIDEO to listOf(
+            VIDEO_STANDARD, "video_resolution", "video_quality", "video_stamp", "video_rotate", "loop_record",
+            "rec_mode", "rec_default_mode", "timelapse_video", "timelapse_video_resolution", "record_photo_time",
+            "emergency_file_backup", "warp_enable", "auto_low_light",
+        ),
+        SettingGroup.PHOTO to listOf(
+            "photo_size", "photo_quality", "photo_stamp", "capture_default_mode", "precise_cont_time",
+            "burst_capture_number", "precise_selftime", "meter_mode",
+        ),
+        SettingGroup.SOUND_LED to listOf("buzzer_volume", "buzzer_ring", "led_mode", "osd_enable"),
+        SettingGroup.SYSTEM to listOf(
+            "auto_power_off", "start_wifi_while_booted", "preview_status", "video_output_dev_type",
+            "system_default_mode", "rc_button_mode", "save_log",
+        ),
+    )
+
+    fun groupOf(key: String): SettingGroup = ORDER.firstOrNull { key in it.second }?.first ?: SettingGroup.OTHER
+
+    /** Sort position: known keys by group and list order, unknown keys last (by name). */
+    fun sortIndex(key: String): Int {
+        var index = 0
+        for ((_, keys) in ORDER) {
+            val i = keys.indexOf(key)
+            if (i >= 0) return index + i
+            index += keys.size
+        }
+        return index
+    }
+
+    fun isVisible(key: String): Boolean = key !in HIDDEN && key !in StatusParser.SECRET_KEYS
+
+    /** on/off settings are drawn as a switch. */
+    fun isSwitch(values: List<String>): Boolean = values.size == 2 && values.toSet() == setOf("on", "off")
+}
