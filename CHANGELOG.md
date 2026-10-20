@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.3.3 - the settings screen prepares the camera by itself; one Connect button
+- Opening the settings screen: if the preview is on, a new session ends it and the list is read; if the camera is recording or capturing, nothing is read, the screen says so and shows "Stop recording" (or "Stop time-lapse") at the bottom; when it stops, the list is read. Unsaved choices are never overwritten. If the preview starts again while reading, one more new session is tried.
+- The "Connect" button on the status screen now opens the system Wi-Fi list first and connects when the user comes back (it replaces the separate "choose Wi-Fi" button). Its text is "Choose Wi-Fi and connect". The probe screen keeps its plain Connect.
+- Phone log 0.3.2: confirmed that a new session starts with "idle" (the standard was settable again); one new session got rval -3 (param 264) once and the app retried successfully 1 s later.
+- Tests: 2 new (165 total). The Compose and Activity files are not compiled here.
+
 ## 0.3.2 - translated values, video standard help, Wi-Fi choice, unlock
 - Values of settings are shown translated (for example led_mode "all enable" -> "All on"); resolutions, NTSC/PAL, S.Fine and similar stay as the camera writes them. A value without a translation is shown as is. Strings opt_<key>_<value> and opt_<value> in values, values-es, values-uk.
 - Video standard has an explanation under it (choose by the mains frequency: PAL 50 Hz, NTSC 60 Hz).

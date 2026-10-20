@@ -263,6 +263,37 @@ class CameraSettingsTest {
         assertNull(state().note)
     }
 
+    @Test
+    fun open_withThePreviewOn_endsItFirst_thenReadsEditableRows() = test {
+        session.connect()
+        waitUntil("connected") { session.state.value is SessionState.Connected && session.settings.value != null }
+        server.appStatus = "vf"
+        session.refresh()
+        waitUntil("vf") { session.status.value.appStatus == "vf" }
+        val before = server.acceptedConnections.get()
+        settings.open()
+        waitUntil("rows") { !state().loading && !state().applying && state().rows.isNotEmpty() && !row("video_standard").locked }
+        assertTrue(server.acceptedConnections.get() > before)
+    }
+
+    @Test
+    fun open_whileRecording_readsNothing_andReadsAfterTheRecordingEnded() = test {
+        session.connect()
+        waitUntil("connected") { session.state.value is SessionState.Connected && session.settings.value != null }
+        server.appStatus = "record"
+        session.refresh()
+        waitUntil("busy") { state().cameraBusy }
+        settings.open()
+        delay(300)
+        assertTrue(state().rows.isEmpty())
+        assertTrue(server.received.none { it.contains("\"msg_id\":3,") && it.contains("\"param\"") })
+        server.appStatus = "idle"
+        session.refresh()
+        waitUntil("not busy") { !state().cameraBusy }
+        settings.open()
+        waitUntil("rows") { state().rows.isNotEmpty() && !state().loading }
+    }
+
     // ---- value names -------------------------------------------------------------------------
 
     @Test

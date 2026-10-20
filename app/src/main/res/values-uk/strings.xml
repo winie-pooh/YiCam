@@ -24,7 +24,7 @@
     <string name="battery_value">%1$d%%</string>
     <string name="sd_free_of_total">Вільно %1$s з %2$s</string>
     <string name="sd_not_usable">Непридатна: камера повідомляє лише %1$s</string>
-    <string name="button_connect">Підключити</string>
+    <string name="button_connect">Обрати Wi-Fi і підключити</string>
     <string name="button_disconnect">Відключити</string>
     <string name="button_refresh">Оновити</string>
     <string name="button_open_settings">Відкрити налаштування застосунку</string>
@@ -73,7 +73,7 @@
     <string name="button_cancel">Скасувати</string>
     <string name="settings_loading">Читаю налаштування… %1$d</string>
     <string name="settings_none">Немає налаштувань, які можна змінити.</string>
-    <string name="settings_busy">Камера записує або знімає: зараз налаштування змінити не можна.</string>
+    <string name="settings_busy">Камера записує або знімає, тому зараз її налаштування не можна ні прочитати, ні змінити. Зупини запис, щоб продовжити.</string>
     <string name="settings_not_connected">Камеру не підключено.</string>
     <string name="note_settings_applied">Налаштування застосовано.</string>
     <string name="note_settings_partial">Деякі налаштування не змінено: %1$s</string>
@@ -117,7 +117,6 @@
     <string name="setting_rc_button_mode">Режим кнопки пульта</string>
     <string name="setting_save_log">Зберігати лог камери</string>
     <string name="settings_locked_hint">Сірі налаштування камера блокує, поки увімкнено перегляд. «Розблокувати» перепідключає до камери, і перегляд вимикається.</string>
-    <string name="button_choose_wifi">Обрати Wi-Fi мережу і підключитись</string>
     <string name="button_unlock">Розблокувати (перепідключитись до камери)</string>
     <string name="setting_hint_video_standard">Обирай за частотою мережі живлення. PAL (50 Гц: Європа, Україна та більшість світу) дає 25/50 к/с. NTSC (60 Гц: США, Канада, Мексика) дає 30/60 к/с. Невідповідність може давати мерехтіння при штучному освітленні; надворі вдень підійде будь-який. Зміна змінює список роздільностей відео.</string>
     <string name="unit_sec">%1$s с</string>

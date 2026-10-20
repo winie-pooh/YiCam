@@ -1,6 +1,6 @@
 /**
- * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting, with an Unlock button), explanations and translated values, the Sync time button, Apply and Discard, the result note.
- * Not responsible for: reading or sending settings (CameraSettings.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
+ * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting, with an Unlock button), explanations and translated values, the camera-busy message with a Stop recording / Stop time-lapse button, the Sync time button, Apply and Discard, the result note.
+ * Not responsible for: reading or sending settings (CameraSettings.kt), the stop commands themselves (CameraController.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
 
@@ -36,16 +36,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
+fun SettingsScreen(settings: CameraSettings, controls: CameraController, onBack: () -> Unit) {
     val state by settings.state.collectAsState()
     var dialogFor by remember { mutableStateOf<String?>(null) }
 
-    // Read the allowed values when the screen opens.
-    LaunchedEffect(Unit) {
-        val s = settings.state.value
-        // The camera locks some settings while the preview is on, so the list is read again on every entry.
-        if (s.available && s.changedCount == 0 && !s.loading) settings.load()
-    }
+    val control by controls.state.collectAsState()
+
+    // On entry the preview is ended (a new session) and the list is read; also again when the camera stops recording.
+    LaunchedEffect(state.available, state.cameraBusy) { settings.open() }
 
     Column(
         modifier = Modifier.safeDrawingPadding().padding(12.dp),
@@ -63,7 +61,18 @@ fun SettingsScreen(settings: CameraSettings, onBack: () -> Unit) {
             }
         }
 
-        if (state.cameraBusy) Text(stringResource(R.string.settings_busy), color = MaterialTheme.colorScheme.error)
+        if (state.cameraBusy) {
+            Text(stringResource(R.string.settings_busy), color = MaterialTheme.colorScheme.error)
+            if (control.recording) {
+                Button(onClick = controls::stopRecording, enabled = !control.busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.button_record_stop))
+                }
+            } else if (control.timelapseRunning) {
+                Button(onClick = controls::stopTimelapse, enabled = !control.busy, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.button_timelapse_stop))
+                }
+            }
+        }
         if (state.rows.any { it.locked }) {
             Text(stringResource(R.string.settings_locked_hint), style = MaterialTheme.typography.bodySmall)
             OutlinedButton(

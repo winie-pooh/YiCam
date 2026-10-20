@@ -1,5 +1,5 @@
 /**
- * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, opening the system Wi-Fi list before connecting, telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, opening the system Wi-Fi list before connecting (the Connect button of the status screen), telling the session when the app goes to the background and stopping the live view then, Share log.
  * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
@@ -162,12 +162,12 @@ private fun AppRoot(
                 )
                 "settings" -> SettingsScreen(
                     settings = cameraSettings,
+                    controls = controls,
                     onBack = { screen = "status" },
                 )
                 else -> StatusScreen(
                     session = session,
-                    onConnect = onConnect,
-                    onChooseWifi = onChooseWifi,
+                    onConnect = onChooseWifi,
                     onOpenSettings = onOpenSettings,
                     onOpenProbe = { screen = "probe" },
                     onOpenLive = { screen = "live" },
