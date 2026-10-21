@@ -24,7 +24,7 @@
     <string name="battery_value">%1$d%%</string>
     <string name="sd_free_of_total">%1$s libres de %2$s</string>
     <string name="sd_not_usable">No utilizable: la cámara solo informa de %1$s</string>
-    <string name="button_connect">Elegir Wi-Fi y conectar</string>
+    <string name="button_connect">Conectar</string>
     <string name="button_disconnect">Desconectar</string>
     <string name="button_refresh">Actualizar</string>
     <string name="button_open_settings">Abrir ajustes de la aplicación</string>
@@ -73,7 +73,7 @@
     <string name="button_cancel">Cancelar</string>
     <string name="settings_loading">Leyendo los ajustes… %1$d</string>
     <string name="settings_none">No hay ajustes modificables.</string>
-    <string name="settings_busy">La cámara está grabando o capturando, así que ahora no se pueden leer ni cambiar sus ajustes. Deténla para continuar.</string>
+    <string name="settings_busy">La cámara está grabando o capturando: ahora no se pueden cambiar los ajustes.</string>
     <string name="settings_not_connected">La cámara no está conectada.</string>
     <string name="note_settings_applied">Ajustes aplicados.</string>
     <string name="note_settings_partial">Algunos ajustes no se cambiaron: %1$s</string>
@@ -117,6 +117,7 @@
     <string name="setting_rc_button_mode">Modo del botón remoto</string>
     <string name="setting_save_log">Guardar registro de la cámara</string>
     <string name="settings_locked_hint">Los ajustes en gris están bloqueados por la cámara mientras la vista previa está activa. \"Desbloquear\" reconecta con la cámara y termina la vista previa.</string>
+    <string name="button_choose_wifi">Elegir red Wi-Fi y conectar</string>
     <string name="button_unlock">Desbloquear (reconectar con la cámara)</string>
     <string name="setting_hint_video_standard">Elige según la frecuencia de la red eléctrica. PAL (50 Hz: Europa, Ucrania y la mayor parte del mundo) da 25/50 fps. NTSC (60 Hz: EE. UU., Canadá, México) da 30/60 fps. Si no coincide, puede haber parpadeo con luz artificial; al aire libre de día sirve cualquiera. Al cambiarlo cambia la lista de resoluciones de vídeo.</string>
     <string name="unit_sec">%1$s s</string>
@@ -147,4 +148,6 @@
     <string name="opt_rec_default_mode_record_timelapse">Vídeo time-lapse</string>
     <string name="opt_rc_button_mode_mode_shutter">Botones de modo y obturador</string>
     <string name="opt_rc_button_mode_record_capture">Botones de grabar y foto</string>
+    <string name="settings_recording">La cámara está grabando un vídeo. Detén la grabación para cambiar los ajustes.</string>
+    <string name="settings_stop_recording">Detener la grabación de vídeo</string>
 </resources>

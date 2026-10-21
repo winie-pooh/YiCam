@@ -1,10 +1,16 @@
 # CHANGELOG
 
-## 0.3.3 - the settings screen prepares the camera by itself; one Connect button
-- Opening the settings screen: if the preview is on, a new session ends it and the list is read; if the camera is recording or capturing, nothing is read, the screen says so and shows "Stop recording" (or "Stop time-lapse") at the bottom; when it stops, the list is read. Unsaved choices are never overwritten. If the preview starts again while reading, one more new session is tried.
-- The "Connect" button on the status screen now opens the system Wi-Fi list first and connects when the user comes back (it replaces the separate "choose Wi-Fi" button). Its text is "Choose Wi-Fi and connect". The probe screen keeps its plain Connect.
-- Phone log 0.3.2: confirmed that a new session starts with "idle" (the standard was settable again); one new session got rval -3 (param 264) once and the app retried successfully 1 s later.
-- Tests: 2 new (165 total). The Compose and Activity files are not compiled here.
+## 0.3.4 - live view during a recording (experiment)
+- Phone log (RTSP trace 20 s into a recording): msg_id 259 answered rval -21, but the camera's RTSP server answered OPTIONS and DESCRIBE with 200 and the SDP. RTP over TCP is refused (461) as always. So a stream during recording may exist; the trace had used TCP and could not tell.
+- LiveViewController: while the camera records (app_status record/recording) or answers 259 with -21, the stream is started without the preview command. If a recording starts while the preview plays, the old session is closed and the stream is tried again once without the command. If no picture comes while the camera really records, the screen says so and waits for vf_start as before. When a stream that played during a recording ends, the next start decides again.
+- RtspProbe ("RTSP trace" on the probe screen): now SETUP over UDP, PLAY, and a count of the RTP packets that arrive in 3 s (first three logged with payload type and sequence).
+- Tests changed/added in LiveViewControllerTest (recording without the command, a picture while recording, -21 handling, restart after a recording starts). Not compiled or run here.
+
+## 0.3.3 - the settings screen opens ready to use; one Connect button
+- Opening the camera settings leaves the preview state by itself (one new session, once per visit) and reads the list, so rows are not greyed out and the Unlock button stays only as a fallback if the camera still reports the preview after that.
+- While the camera records (or takes pictures) nothing is read: the screen says "The camera is recording a video. Stop the recording to change the settings." with a "Stop video recording" button (a time-lapse gets "Stop time-lapse"); when the recording stops the list is read by itself.
+- Status screen: the separate "Choose Wi-Fi network, then connect" button is gone. "Connect" connects at once when the phone is already on the camera Wi-Fi (an address 192.168.42.x), otherwise it opens the system Wi-Fi list and connects when the user comes back.
+- Tests: 4 new in CameraSettingsTest (opening with the preview on, without it, while recording, only one automatic unlock per visit); the fake camera can keep the preview state across sessions. Compose and Activity files are not compiled here.
 
 ## 0.3.2 - translated values, video standard help, Wi-Fi choice, unlock
 - Values of settings are shown translated (for example led_mode "all enable" -> "All on"); resolutions, NTSC/PAL, S.Fine and similar stay as the camera writes them. A value without a translation is shown as is. Strings opt_<key>_<value> and opt_<value> in values, values-es, values-uk.

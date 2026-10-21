@@ -25,7 +25,7 @@
     <string name="battery_value">%1$d%%</string>
     <string name="sd_free_of_total">%1$s free of %2$s</string>
     <string name="sd_not_usable">Not usable: the camera reports only %1$s</string>
-    <string name="button_connect">Choose Wi-Fi and connect</string>
+    <string name="button_connect">Connect</string>
     <string name="button_disconnect">Disconnect</string>
     <string name="button_refresh">Refresh</string>
     <string name="button_open_settings">Open app settings</string>
@@ -74,7 +74,7 @@
     <string name="button_cancel">Cancel</string>
     <string name="settings_loading">Reading the settings… %1$d</string>
     <string name="settings_none">No changeable settings found.</string>
-    <string name="settings_busy">The camera is recording or capturing, so its settings cannot be read or changed now. Stop it to continue.</string>
+    <string name="settings_busy">The camera is recording or capturing: settings cannot be changed now.</string>
     <string name="settings_not_connected">The camera is not connected.</string>
     <string name="note_settings_applied">Settings applied.</string>
     <string name="note_settings_partial">Some settings were not changed: %1$s</string>
@@ -118,6 +118,7 @@
     <string name="setting_rc_button_mode">Remote button mode</string>
     <string name="setting_save_log">Save camera log</string>
     <string name="settings_locked_hint">Greyed-out settings are locked by the camera while the preview is on. \"Unlock\" reconnects to the camera, which ends the preview.</string>
+    <string name="button_choose_wifi">Choose Wi-Fi network, then connect</string>
     <string name="button_unlock">Unlock (reconnect to the camera)</string>
     <string name="setting_hint_video_standard">Choose by your mains frequency. PAL (50 Hz: Europe, Ukraine and most of the world) gives 25/50 fps. NTSC (60 Hz: USA, Canada, Mexico) gives 30/60 fps. A mismatch can cause flicker under artificial light; outdoors in daylight either works. Changing it changes the list of video resolutions.</string>
     <string name="unit_sec">%1$s s</string>
@@ -148,4 +149,6 @@
     <string name="opt_rec_default_mode_record_timelapse">Time-lapse video</string>
     <string name="opt_rc_button_mode_mode_shutter">Mode and shutter buttons</string>
     <string name="opt_rc_button_mode_record_capture">Record and photo buttons</string>
+    <string name="settings_recording">The camera is recording a video. Stop the recording to change the settings.</string>
+    <string name="settings_stop_recording">Stop video recording</string>
 </resources>

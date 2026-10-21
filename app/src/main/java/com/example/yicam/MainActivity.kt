@@ -1,12 +1,15 @@
 /**
- * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, opening the system Wi-Fi list before connecting (the Connect button of the status screen), telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, the Connect button (connects at once when the phone is already on the camera Wi-Fi, otherwise opens the system Wi-Fi list and connects when the user comes back), telling the session when the app goes to the background and stopping the live view then, Share log.
  * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
 
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -64,8 +67,7 @@ class MainActivity : ComponentActivity() {
                 controls = controls,
                 cameraSettings = cameraSettings,
                 livePlayer = livePlayer,
-                onConnect = ::connectClicked,
-                onChooseWifi = ::chooseWifi,
+                onConnect = ::connectOrChoose,
                 onShareLog = ::shareLog,
                 onOpenSettings = ::openAppSettings,
             )
@@ -83,6 +85,23 @@ class MainActivity : ComponentActivity() {
         if (!isChangingConfigurations) live.pauseForBackground()
         session.setForeground(false)
         super.onStop()
+    }
+
+    /** One Connect button: connects at once on the camera Wi-Fi, otherwise lets the user choose the network first. */
+    private fun connectOrChoose() {
+        if (isOnCameraWifi()) connectClicked() else chooseWifi()
+    }
+
+    /** True when some Wi-Fi network of the phone has an address 192.168.42.x (the camera's network). */
+    private fun isOnCameraWifi(): Boolean {
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        @Suppress("DEPRECATION")
+        return manager.allNetworks.any { network ->
+            val capabilities = manager.getNetworkCapabilities(network)
+            val properties = manager.getLinkProperties(network)
+            capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true &&
+                properties?.linkAddresses?.any { it.address.hostAddress?.startsWith("192.168.42.") == true } == true
+        }
     }
 
     /** On Android 17+ the app needs the local network permission before it may talk to 192.168.42.1. */
@@ -137,7 +156,6 @@ private fun AppRoot(
     cameraSettings: CameraSettings,
     livePlayer: ExoRtspPlayer,
     onConnect: () -> Unit,
-    onChooseWifi: () -> Unit,
     onShareLog: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -167,7 +185,7 @@ private fun AppRoot(
                 )
                 else -> StatusScreen(
                     session = session,
-                    onConnect = onChooseWifi,
+                    onConnect = onConnect,
                     onOpenSettings = onOpenSettings,
                     onOpenProbe = { screen = "probe" },
                     onOpenLive = { screen = "live" },

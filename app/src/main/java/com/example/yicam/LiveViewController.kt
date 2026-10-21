@@ -1,5 +1,5 @@
 /**
- * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream (UDP: the camera refuses TCP), waiting for the first picture, noticing a frozen or ended stream or a lost link, pausing when the camera starts recording and resuming after it, pausing when the app goes to the background (screen off) and resuming when it returns, retrying, and restarting a stream that breaks.
+ * Responsible for: the live view logic: checking that a preview is possible, starting it on the camera (msg_id 259), starting the player on the RTSP stream (UDP: the camera refuses TCP), waiting for the first picture, noticing a frozen or ended stream or a lost link, trying the stream during a recording (without the preview command, which the camera refuses then) and waiting for the camera to come back if there is none, pausing when the app goes to the background (screen off) and resuming when it returns, retrying, and restarting a stream that breaks.
  * Not responsible for: the video decoding itself (StreamPlayer.kt, ExoRtspPlayer.kt), drawing (LiveScreen.kt) or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -121,6 +121,10 @@ class LiveViewController(
             return
         }
         var attempt = 0
+        // While the camera records it refuses msg_id 259 (-21) but its RTSP server still answers (DESCRIBE worked 20 s into a
+        // recording on a phone), so a stream is tried without the command. Whether it delivers pictures is not yet known.
+        var withoutPreviewCommand = false
+        var recordingRetries = 0
         while (true) {
             attempt++
             val startedMs = nowMs()
@@ -130,22 +134,28 @@ class LiveViewController(
                 _state.value = LiveState.Problem(LiveProblem.NOT_CONNECTED, "")
                 return
             }
-            val reply = try {
-                api.send(Cmd.START_PREVIEW, listOf("param" to "none_force"))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                fail(LiveProblem.PREVIEW_COMMAND_FAILED, e.message ?: e.javaClass.simpleName)
-                return
-            }
-            if (!reply.isOk) {
-                if (reply.rval == RVAL_BUSY) {
-                    // Seen on a phone: -21 came every time the camera was recording a video.
-                    fail(LiveProblem.RECORDING, "the camera answered rval $RVAL_BUSY (busy; it was recording when this was seen)")
-                } else {
-                    fail(LiveProblem.PREVIEW_COMMAND_FAILED, "the camera answered rval ${reply.rval}")
+            if (session.status.value.appStatus in CameraController.RECORDING_STATUSES) withoutPreviewCommand = true
+            if (withoutPreviewCommand) {
+                log("recording: starting the stream without the preview command")
+            } else {
+                val reply = try {
+                    api.send(Cmd.START_PREVIEW, listOf("param" to "none_force"))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    fail(LiveProblem.PREVIEW_COMMAND_FAILED, e.message ?: e.javaClass.simpleName)
+                    return
                 }
-                return
+                if (!reply.isOk) {
+                    if (reply.rval == RVAL_BUSY) {
+                        // Seen on a phone: -21 came every time the camera was recording a video.
+                        log("the camera answered rval $RVAL_BUSY (recording): trying the stream without the preview command")
+                        withoutPreviewCommand = true
+                    } else {
+                        fail(LiveProblem.PREVIEW_COMMAND_FAILED, "the camera answered rval ${reply.rval}")
+                        return
+                    }
+                }
             }
 
             _state.value = LiveState.ConnectingStream
@@ -196,21 +206,43 @@ class LiveViewController(
                 fail(LiveProblem.NOT_CONNECTED, outcome.message)
                 return
             }
-            if (outcome.previewStopped) {
-                // Seen on a phone: when a recording ended while the player was still connected, the camera Wi-Fi vanished
-                // within about 20-40 s. So the RTSP session is closed now (player.stop() above) and the stream is
-                // started again only after the camera announces vf_start.
+            if (outcome.previewStopped && !withoutPreviewCommand) {
+                // A recording started while the preview was playing and the camera ended the preview. The old RTSP session is
+                // closed now (player.stop() above; on a phone the camera Wi-Fi vanished when it was left open across the end
+                // of a recording). Try the stream once more, without the preview command.
+                log("the camera ended the preview (a recording?): trying the stream without the preview command")
+                withoutPreviewCommand = true
+                attempt = 0
+                delay(config.retryDelayMs)
+                continue
+            }
+            if (withoutPreviewCommand && !outcome.played) {
+                if (session.status.value.appStatus !in CameraController.RECORDING_STATUSES && recordingRetries < MAX_RECORDING_RETRIES) {
+                    // The recording is over (or the mode was stale): start normally.
+                    recordingRetries++
+                    log("not recording any more: starting normally")
+                    withoutPreviewCommand = false
+                    attempt = 0
+                    delay(config.retryDelayMs)
+                    continue
+                }
+                // No picture while recording: the camera has no stream now. Wait until it announces vf_start.
                 fail(LiveProblem.RECORDING, outcome.message)
                 val resumed = withTimeoutOrNull(config.resumeWaitMs) {
                     session.cameraEvents.first { it.type == "vf_start" }
                 }
                 if (resumed == null) return
                 log("the camera announced vf_start, resuming")
+                withoutPreviewCommand = false
+                recordingRetries = 0
                 attempt = 0
                 delay(config.retryDelayMs)
                 continue
             }
-            if (outcome.played) attempt = 0
+            if (outcome.played) {
+                attempt = 0
+                withoutPreviewCommand = false // decide again: the recording may be over
+            }
             if (attempt >= config.maxStartAttempts) {
                 fail(if (outcome.timedOut) LiveProblem.STREAM_TIMEOUT else LiveProblem.STREAM_FAILED, outcome.message)
                 return
@@ -266,7 +298,6 @@ class LiveViewController(
 
     private fun blockingProblem(): LiveProblem? {
         if (session.state.value !is SessionState.Connected || session.currentApi == null) return LiveProblem.NOT_CONNECTED
-        if (session.status.value.appStatus in CameraController.RECORDING_STATUSES) return LiveProblem.RECORDING
         if (session.settings.value?.values?.get("preview_status") == "off") return LiveProblem.PREVIEW_DISABLED
         return null
     }
@@ -283,5 +314,8 @@ class LiveViewController(
     private companion object {
         /** The answer of msg_id 259 while the camera is recording (seen twice). */
         const val RVAL_BUSY = -21
+
+        /** How often a stale "recording" status may send the loop back to the normal start before it gives up. */
+        const val MAX_RECORDING_RETRIES = 3
     }
 }

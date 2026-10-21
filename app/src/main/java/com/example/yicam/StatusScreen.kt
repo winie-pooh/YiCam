@@ -1,5 +1,5 @@
 /**
- * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, Connect/Disconnect/Refresh buttons, the Live view and Camera settings buttons and the menu entry to the probe screen.
+ * Responsible for: the localized status screen: connection state with a reason, battery, SD card, camera mode, Connect/Disconnect/Refresh buttons, the "choose Wi-Fi, then connect" button, the Live view and Camera settings buttons and the menu entry to the probe screen.
  * Not responsible for: any link or protocol logic (CameraSession.kt), the dev probe screen (ProbeScreen.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam

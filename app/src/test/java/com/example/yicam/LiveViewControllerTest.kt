@@ -35,7 +35,7 @@ class LiveViewControllerTest {
             network,
             TrafficLog(),
             scope,
-            CameraSession.Config(host = "127.0.0.1", port = server.port, pollBatteryMs = 60_000L, pollSdMs = 60_000L),
+            CameraSession.Config(host = "127.0.0.1", port = server.port, pollBatteryMs = 60_000L, pollSdMs = 60_000L, eventRefreshDelayMs = 50L),
         )
         player = FakeStreamPlayer()
         controller = LiveViewController(
@@ -101,13 +101,24 @@ class LiveViewControllerTest {
     }
 
     @Test
-    fun recording_blocksTheStart_andNoCommandIsSent() = test {
+    fun recording_triesTheStreamWithoutThePreviewCommand_andReportsRecordingIfThereIsNoPicture() = test {
         server.appStatus = "recording"
         connectSession()
         controller.start()
-        waitUntil("problem") { problem() == LiveProblem.RECORDING }
+        waitUntil("player started") { player.startedUrls.size == 1 }
         assertEquals(0, previewCommandsSent())
-        assertEquals(0, player.startedUrls.size)
+        waitUntil("problem") { problem() == LiveProblem.RECORDING }
+    }
+
+    @Test
+    fun recording_whenTheStreamWorks_thePictureIsShown() = test {
+        server.appStatus = "recording"
+        connectSession()
+        controller.start()
+        waitUntil("player started") { player.startedUrls.size == 1 }
+        player.emitFirstFrame()
+        waitUntil("playing") { controller.state.value is LiveState.Playing }
+        assertEquals(0, previewCommandsSent())
     }
 
     @Test
@@ -142,12 +153,13 @@ class LiveViewControllerTest {
     }
 
     @Test
-    fun cameraBusyAnswer_isShownAsRecording() = test {
+    fun cameraBusyAnswer_makesTheControllerTryTheStreamWithoutTheCommand() = test {
         server.previewRval = -21
         connectSession()
         controller.start()
+        waitUntil("player started") { player.startedUrls.size == 1 }
+        assertEquals(1, previewCommandsSent())
         waitUntil("problem") { problem() == LiveProblem.RECORDING }
-        assertEquals(0, player.startedUrls.size)
     }
 
     @Test
@@ -191,7 +203,7 @@ class LiveViewControllerTest {
     }
 
     @Test
-    fun recordingStartsWhilePlaying_closesThePlayer_andResumesAfterTheCameraIsBack() = test {
+    fun recordingStartsWhilePlaying_closesThePlayer_triesAgainWithoutTheCommand_andResumesAfterTheCameraIsBack() = test {
         connectSession()
         controller.start()
         waitUntil("first start") { player.startedUrls.size == 1 }
@@ -199,15 +211,20 @@ class LiveViewControllerTest {
         waitUntil("playing") { controller.state.value is LiveState.Playing }
         delay(150) // let the event watcher subscribe
         val stopsBefore = player.stopCalls.get()
+        server.appStatus = "recording"
         server.pushEvent("""{ "msg_id": 7, "type": "start_video_record" }""")
         server.pushEvent("""{ "msg_id": 7, "type": "vf_stop" }""")
-        waitUntil("paused as recording") { problem() == LiveProblem.RECORDING }
+        waitUntil("second start") { player.startedUrls.size == 2 }
         assertTrue(player.stopCalls.get() > stopsBefore)
-        assertEquals(1, player.startedUrls.size) // nothing is restarted while the camera records
+        assertEquals(1, previewCommandsSent()) // the second start had no preview command
+        // no picture arrives: the camera has no stream while it records
+        waitUntil("paused as recording") { problem() == LiveProblem.RECORDING }
         delay(200)
-        assertEquals(1, player.startedUrls.size)
+        assertEquals(2, player.startedUrls.size)
+        server.appStatus = "idle"
         server.pushEvent(Fixtures.VF_START_EVENT)
-        waitUntil("resumed") { player.startedUrls.size == 2 }
+        waitUntil("resumed") { player.startedUrls.size == 3 }
+        assertEquals(2, previewCommandsSent())
     }
 
     @Test

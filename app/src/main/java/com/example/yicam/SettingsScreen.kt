@@ -1,6 +1,6 @@
 /**
- * Responsible for: the localized camera settings screen: the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting, with an Unlock button), explanations and translated values, the camera-busy message with a Stop recording / Stop time-lapse button, the Sync time button, Apply and Discard, the result note.
- * Not responsible for: reading or sending settings (CameraSettings.kt), the stop commands themselves (CameraController.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
+ * Responsible for: the localized camera settings screen: opening it ready to use (no preview, no locked rows), the recording message with a Stop recording button, the list of settings in groups (switch for on/off, a choice dialog for the rest, greyed out when the camera locks a setting, with an Unlock button), explanations and translated values, the Sync time button, Apply and Discard, the result note.
+ * Not responsible for: reading or sending settings (CameraSettings.kt), which keys are shown (SettingsCatalog.kt) or the texts themselves (the strings.xml files of values, values-es and values-uk).
  */
 package com.example.yicam
 
@@ -40,10 +40,12 @@ fun SettingsScreen(settings: CameraSettings, controls: CameraController, onBack:
     val state by settings.state.collectAsState()
     var dialogFor by remember { mutableStateOf<String?>(null) }
 
-    val control by controls.state.collectAsState()
-
-    // On entry the preview is ended (a new session) and the list is read; also again when the camera stops recording.
-    LaunchedEffect(state.available, state.cameraBusy) { settings.open() }
+    // On entry: leave the preview state by itself and read the list.
+    LaunchedEffect(Unit) { settings.screenOpened() }
+    // Again when the link comes back (after the automatic new session) or the camera stops recording.
+    LaunchedEffect(state.available, state.cameraBusy) {
+        if (state.available && !state.cameraBusy) settings.open()
+    }
 
     Column(
         modifier = Modifier.safeDrawingPadding().padding(12.dp),
@@ -62,13 +64,16 @@ fun SettingsScreen(settings: CameraSettings, controls: CameraController, onBack:
         }
 
         if (state.cameraBusy) {
-            Text(stringResource(R.string.settings_busy), color = MaterialTheme.colorScheme.error)
-            if (control.recording) {
-                Button(onClick = controls::stopRecording, enabled = !control.busy, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.button_record_stop))
+            Text(
+                stringResource(if (state.recording) R.string.settings_recording else R.string.settings_busy),
+                color = MaterialTheme.colorScheme.error,
+            )
+            if (state.recording) {
+                Button(onClick = { controls.stopRecording() }, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.settings_stop_recording))
                 }
-            } else if (control.timelapseRunning) {
-                Button(onClick = controls::stopTimelapse, enabled = !control.busy, modifier = Modifier.fillMaxWidth()) {
+            } else {
+                OutlinedButton(onClick = { controls.stopTimelapse() }, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.button_timelapse_stop))
                 }
             }

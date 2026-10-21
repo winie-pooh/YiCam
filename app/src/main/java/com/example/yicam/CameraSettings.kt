@@ -1,5 +1,5 @@
 /**
- * Responsible for: the camera settings screen logic: opening (ending the preview first), asking the camera for the allowed values of each setting (msg_id 3 with param=key), marking the ones the camera locks at the moment, unlocking them by starting a new session (the camera leaves the preview then), preparing the screen when it opens (nothing is read while the camera records; a running preview is ended first), keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
+ * Responsible for: the camera settings screen logic: opening the screen (leaving the preview state by itself with one new session, waiting while the camera records), asking the camera for the allowed values of each setting (msg_id 3 with param=key), marking the ones the camera locks at the moment, unlocking them by starting a new session (the camera leaves the preview then), keeping the user's unsaved choices, applying only the changed ones (video standard first, then re-reading the lists that depend on it) and setting the camera clock from the phone.
  * Not responsible for: drawing (SettingsScreen.kt), the camera mode, photo, record and zoom controls (CameraController.kt), or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -46,8 +46,8 @@ data class SettingsUiState(
     val applying: Boolean = false,
     /** The camera is recording or taking pictures, so it will not accept changes. */
     val cameraBusy: Boolean = false,
-    /** The preview is on (app_status "vf"): the camera then locks some settings. */
-    val previewOn: Boolean = false,
+    /** The busy state is a video recording (the screen offers "Stop video recording"). */
+    val recording: Boolean = false,
     val rows: List<SettingRow> = emptyList(),
     val note: SettingsMessage? = null,
 ) {
@@ -69,9 +69,6 @@ class CameraSettings(
 
     private val local = MutableStateFlow(Local())
 
-    /** A new session was already started for this opening of the screen (so a second one is not tried). */
-    @Volatile private var unlockTried = false
-
     val state: StateFlow<SettingsUiState> = combine(session.state, session.status, local) { link, status, own ->
         SettingsUiState(
             available = link is SessionState.Connected,
@@ -79,7 +76,7 @@ class CameraSettings(
             applying = own.applying,
             cameraBusy = status.appStatus in CameraController.RECORDING_STATUSES ||
                 status.appStatus in CameraController.CAPTURING_STATUSES,
-            previewOn = status.appStatus == PREVIEW_STATUS,
+            recording = status.appStatus in CameraController.RECORDING_STATUSES,
             rows = own.rows,
             note = own.note,
         )
@@ -96,21 +93,36 @@ class CameraSettings(
         }
     }
 
-    /**
-     * Call when the settings screen opens (and again when a recording ends): nothing is read while the camera records or
-     * captures; with the preview on, a new session ends the preview first; then the list is read. Unsaved choices are kept.
-     */
-    fun open() {
-        val now = state.value
-        if (!now.available || now.loading || now.applying || now.cameraBusy || now.changedCount > 0) return
+    /** One automatic new session per visit: if the camera still reports the preview after it, the rows stay locked (the Unlock button remains). */
+    @Volatile
+    private var unlockTried = false
+
+    /** Call once when the screen opens. */
+    fun screenOpened() {
         unlockTried = false
-        if (now.previewOn) unlock() else loadRows(autoUnlock = true)
+        open()
     }
 
-    /** Reads the allowed values of every visible setting, one after the other. */
-    fun load() = loadRows(autoUnlock = false)
+    /**
+     * Gets the list ready without the user doing anything: while the camera records nothing is read (the screen offers to stop the
+     * recording; when it stops this is called again); if the camera is in the preview state a new session ends it first; then the list is read.
+     * Safe to call again at any time.
+     */
+    fun open() {
+        if (local.value.loading || local.value.applying) return
+        if (session.state.value !is SessionState.Connected) return
+        if (state.value.cameraBusy) return
+        if (state.value.changedCount > 0) return
+        if (session.status.value.appStatus == PREVIEW_STATUS && !unlockTried) {
+            unlockTried = true
+            unlock()
+        } else {
+            load()
+        }
+    }
 
-    private fun loadRows(autoUnlock: Boolean) {
+    /** Reads the allowed values of every visible setting, one after the other. Call when the screen opens. */
+    fun load() {
         if (local.value.loading || local.value.applying) return
         val api = session.currentApi
         val snapshot = session.settings.value
@@ -129,8 +141,6 @@ class CameraSettings(
                     local.update { it.copy(rows = sorted(rows)) }
                 }
                 local.update { it.copy(loading = false, rows = sorted(rows)) }
-                // The preview may have started after the status was read: end it once and read again.
-                if (autoUnlock && !unlockTried && rows.any { it.locked } && !state.value.cameraBusy) unlock()
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -157,7 +167,6 @@ class CameraSettings(
      */
     fun unlock() {
         if (local.value.loading || local.value.applying) return
-        unlockTried = true
         val oldRead = session.settings.value?.readAtMs
         local.update { it.copy(applying = true, note = null) }
         scope.launch {
@@ -276,9 +285,9 @@ class CameraSettings(
 
     private fun message(e: Exception): String = e.message ?: e.javaClass.simpleName
 
-    companion object {
-        /** app_status while the preview is on. */
+    private companion object {
+        /** app_status while the preview is on (the camera then locks some settings). */
         const val PREVIEW_STATUS = "vf"
-        private const val UNLOCK_WAIT_MS = 15_000L
+        const val UNLOCK_WAIT_MS = 15_000L
     }
 }

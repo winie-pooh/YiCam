@@ -1,5 +1,5 @@
 /**
- * Responsible for: a one-off RTSP trace for diagnosis: OPTIONS, DESCRIBE, SETUP (RTP over TCP, several URL guesses), PLAY and a 3-second read of the interleaved data, every step written to the log.
+ * Responsible for: a one-off RTSP trace for diagnosis: OPTIONS, DESCRIBE, SETUP (RTP over UDP, several URL guesses), PLAY and a 3-second count of the UDP packets that arrive, every step written to the log.
  * Not responsible for: playing video (ExoRtspPlayer.kt), starting the preview on the camera (ProbeController.kt) or any decision (LiveViewController.kt).
  */
 package com.example.yicam
@@ -7,8 +7,11 @@ package com.example.yicam
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.DatagramPacket
+import java.net.DatagramSocket
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.net.SocketException
 import java.net.SocketTimeoutException
 
 object RtspProbe {
@@ -71,26 +74,39 @@ object RtspProbe {
                 }
                 candidates += base
 
-                var session: String? = null
-                for (url in candidates) {
-                    val setup = call("SETUP", url, listOf("Transport: RTP/AVP/TCP;unicast;interleaved=0-1"))
-                    if (setup.status == 200) {
-                        session = setup.header("Session")?.substringBefore(';')?.trim()
-                        log.sys("[RTSP] SETUP worked with $url (session $session)")
-                        break
-                    }
-                }
-                if (session == null) {
-                    log.sys("[RTSP] no SETUP address worked, stopping")
+                // The camera refuses RTP over TCP (461), so the trace uses UDP, like the player.
+                val udp = openUdpPair()
+                if (udp == null) {
+                    log.sys("[RTSP] no free UDP port pair, stopping")
                     return@use
                 }
-
-                call("PLAY", base, listOf("Session: $session", "Range: npt=0.000-"))
-                readInterleaved(input, log, 3_000L)
                 try {
-                    call("TEARDOWN", base, listOf("Session: $session"))
-                } catch (e: Exception) {
-                    // the camera may close the connection at once; nothing to report
+                    var session: String? = null
+                    for (url in candidates) {
+                        val setup = call(
+                            "SETUP",
+                            url,
+                            listOf("Transport: RTP/AVP;unicast;client_port=${udp.port}-${udp.port + 1}"),
+                        )
+                        if (setup.status == 200) {
+                            session = setup.header("Session")?.substringBefore(';')?.trim()
+                            log.sys("[RTSP] SETUP worked with $url (session $session)")
+                            break
+                        }
+                    }
+                    if (session == null) {
+                        log.sys("[RTSP] no SETUP address worked, stopping")
+                        return@use
+                    }
+                    call("PLAY", base, listOf("Session: $session", "Range: npt=0.000-"))
+                    readUdp(udp.rtp, log, 3_000L)
+                    try {
+                        call("TEARDOWN", base, listOf("Session: $session"))
+                    } catch (e: Exception) {
+                        // the camera may close the connection at once; nothing to report
+                    }
+                } finally {
+                    udp.close()
                 }
             }
         } catch (e: Exception) {
@@ -123,36 +139,54 @@ object RtspProbe {
         }
     }
 
-    private fun readInterleaved(input: InputStream, log: TrafficLog, durationMs: Long) {
-        val end = System.nanoTime() + durationMs * 1_000_000L
-        var frames = 0
-        var bytes = 0L
-        try {
-            while (System.nanoTime() < end) {
-                val b = input.read()
-                if (b < 0) {
-                    log.sys("[RTSP] the camera closed the stream")
-                    break
-                }
-                if (b != '$'.code) continue
-                val channel = input.read()
-                val high = input.read()
-                val low = input.read()
-                if (channel < 0 || low < 0) break
-                val length = (high shl 8) or low
-                val payload = ByteArray(length)
-                readFully(input, payload)
-                frames++
-                bytes += length
-                if (frames <= 3) {
-                    val type = if (length > 1) payload[1].toInt() and 0x7F else -1
-                    log.sys("[RTSP] frame $frames: channel $channel, $length bytes, RTP payload type $type")
-                }
-            }
-        } catch (e: SocketTimeoutException) {
-            log.sys("[RTSP] no data for 5 s")
+    private class UdpPair(val rtp: DatagramSocket, val rtcp: DatagramSocket, val port: Int) {
+        fun close() {
+            rtp.close()
+            rtcp.close()
         }
-        log.sys("[RTSP] in $durationMs ms: $frames interleaved frames, $bytes bytes")
+    }
+
+    private fun openUdpPair(): UdpPair? {
+        var port = 40_000
+        while (port < 40_200) {
+            try {
+                val rtp = DatagramSocket(port)
+                try {
+                    return UdpPair(rtp, DatagramSocket(port + 1), port)
+                } catch (e: SocketException) {
+                    rtp.close()
+                }
+            } catch (e: SocketException) {
+                // port in use, try the next pair
+            }
+            port += 2
+        }
+        return null
+    }
+
+    /** Counts the RTP packets that arrive on [socket] for [durationMs]. */
+    private fun readUdp(socket: DatagramSocket, log: TrafficLog, durationMs: Long) {
+        socket.soTimeout = 1_000
+        val buffer = ByteArray(2_048)
+        val end = System.nanoTime() + durationMs * 1_000_000L
+        var packets = 0
+        var bytes = 0L
+        while (System.nanoTime() < end) {
+            val packet = DatagramPacket(buffer, buffer.size)
+            try {
+                socket.receive(packet)
+            } catch (e: SocketTimeoutException) {
+                continue
+            }
+            packets++
+            bytes += packet.length
+            if (packets <= 3 && packet.length >= 12) {
+                val type = buffer[1].toInt() and 0x7F
+                val sequence = ((buffer[2].toInt() and 0xFF) shl 8) or (buffer[3].toInt() and 0xFF)
+                log.sys("[RTSP] UDP packet $packets: ${packet.length} bytes, RTP payload type $type, sequence $sequence")
+            }
+        }
+        log.sys("[RTSP] in $durationMs ms: $packets UDP packets, $bytes bytes")
     }
 
     private fun skipFrame(input: InputStream) {

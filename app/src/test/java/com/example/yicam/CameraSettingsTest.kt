@@ -263,37 +263,6 @@ class CameraSettingsTest {
         assertNull(state().note)
     }
 
-    @Test
-    fun open_withThePreviewOn_endsItFirst_thenReadsEditableRows() = test {
-        session.connect()
-        waitUntil("connected") { session.state.value is SessionState.Connected && session.settings.value != null }
-        server.appStatus = "vf"
-        session.refresh()
-        waitUntil("vf") { session.status.value.appStatus == "vf" }
-        val before = server.acceptedConnections.get()
-        settings.open()
-        waitUntil("rows") { !state().loading && !state().applying && state().rows.isNotEmpty() && !row("video_standard").locked }
-        assertTrue(server.acceptedConnections.get() > before)
-    }
-
-    @Test
-    fun open_whileRecording_readsNothing_andReadsAfterTheRecordingEnded() = test {
-        session.connect()
-        waitUntil("connected") { session.state.value is SessionState.Connected && session.settings.value != null }
-        server.appStatus = "record"
-        session.refresh()
-        waitUntil("busy") { state().cameraBusy }
-        settings.open()
-        delay(300)
-        assertTrue(state().rows.isEmpty())
-        assertTrue(server.received.none { it.contains("\"msg_id\":3,") && it.contains("\"param\"") })
-        server.appStatus = "idle"
-        session.refresh()
-        waitUntil("not busy") { !state().cameraBusy }
-        settings.open()
-        waitUntil("rows") { state().rows.isNotEmpty() && !state().loading }
-    }
-
     // ---- value names -------------------------------------------------------------------------
 
     @Test
@@ -351,6 +320,70 @@ class CameraSettingsTest {
         settings.unlock()
         waitUntil("unlocked") { !state().loading && !state().applying && state().rows.isNotEmpty() && !row("video_standard").locked }
         assertTrue(server.acceptedConnections.get() > before)
+    }
+
+    // ---- opening the screen ----------------------------------------------------------------
+
+    private suspend fun connectOnly() {
+        session.connect()
+        waitUntil("connected and settings read") {
+            session.state.value is SessionState.Connected && session.settings.value != null
+        }
+    }
+
+    @Test
+    fun screenOpened_whilePreviewIsOn_leavesItByItself_andTheRowsAreEditable() = test {
+        connectOnly()
+        server.appStatus = "vf"
+        session.refresh()
+        waitUntil("vf") { session.status.value.appStatus == "vf" }
+        val before = server.acceptedConnections.get()
+        settings.screenOpened()
+        waitUntil("ready") { !state().loading && !state().applying && state().rows.isNotEmpty() && state().rows.none { it.locked } }
+        assertEquals(before + 1, server.acceptedConnections.get())
+    }
+
+    @Test
+    fun screenOpened_withoutPreview_justLoads_noNewSession() = test {
+        connectOnly()
+        val before = server.acceptedConnections.get()
+        settings.screenOpened()
+        waitUntil("loaded") { !state().loading && state().rows.isNotEmpty() }
+        assertEquals(before, server.acceptedConnections.get())
+    }
+
+    @Test
+    fun screenOpened_whileRecording_readsNothing_untilTheRecordingStops() = test {
+        server.appStatus = "record"
+        connectOnly()
+        waitUntil("record") { session.status.value.appStatus == "record" }
+        settings.screenOpened()
+        delay(300)
+        assertTrue(state().cameraBusy)
+        assertTrue(state().recording)
+        assertTrue(state().rows.isEmpty())
+        server.appStatus = "idle"
+        session.refresh()
+        waitUntil("not busy") { !state().cameraBusy }
+        settings.open()
+        waitUntil("loaded") { !state().loading && state().rows.isNotEmpty() }
+    }
+
+    @Test
+    fun automaticUnlock_isTriedOnlyOncePerVisit() = test {
+        server.previewSurvivesNewSession = true
+        connectOnly()
+        server.appStatus = "vf"
+        session.refresh()
+        waitUntil("vf") { session.status.value.appStatus == "vf" }
+        val before = server.acceptedConnections.get()
+        settings.screenOpened()
+        waitUntil("loaded") { !state().loading && !state().applying && state().rows.isNotEmpty() }
+        settings.open()
+        settings.open()
+        delay(400)
+        assertEquals(before + 1, server.acceptedConnections.get())
+        assertTrue(state().rows.any { it.locked })
     }
 
     // ---- clock ---------------------------------------------------------------------------------

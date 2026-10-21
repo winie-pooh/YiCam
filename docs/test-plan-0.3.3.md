@@ -1,6 +1,6 @@
 # Test plan 0.3.3
-
-1. Open Live view, go back, open Camera settings. Check: the settings load by themselves and the video standard is editable.
-2. Start a recording, open Camera settings. Check: a message says the camera is recording, nothing is loaded, "Stop recording" is at the bottom. Press it: the recording stops and the settings load by themselves.
-3. Disconnect, press "Choose Wi-Fi and connect": the Wi-Fi list opens; after choosing the camera network the app connects.
-4. Share log.
+1. Live view on, back, open Camera settings: rows are active at once (a short reconnect), no Unlock button. Change the video standard.
+2. Start a video recording (live screen button), open Camera settings: message and "Stop video recording"; press it: the list loads by itself.
+3. Disconnect. Switch the phone to another Wi-Fi. Press Connect: the system Wi-Fi list opens; choose the camera network, come back: connected.
+4. Phone on the camera Wi-Fi, press Connect: connects at once, no list.
+5. Share log.
