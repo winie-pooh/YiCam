@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.4.1.1 - downloads work without the live view trick; every step goes to the log
+- Cause (found in the Xiaomi_Yi PC program by deltaflyer4747, `CC.pyw` `FileDownloadThread`): the camera's HTTP server (port 80, Cherokee) sleeps while the camera is not in viewfinder mode. The PC program sends `{"msg_id":259,"param":"none_force"}` before EVERY download ("fix for web port by luckylz", dashcamtalk forum). Without it a download started from the files screen without a live view fails, while listings (JSON port 7878) keep working.
+- FileDownload: before the HTTP download it now sends msg_id 259 `none_force` itself and waits 0.8 s. This is NOT the phone live view: no player is started and the camera simply stays in viewfinder mode. A busy answer (rval -21, the camera is recording) or a failed wake-up is logged and the download is still tried, as the PC program does. Recorded in docs/protocol-findings.md [VERIFY on the real camera that this fixes downloads without a prior live view].
+- Log: every download step and failure now goes to the traffic log, so a failed download is no longer silent: [DL] start (name, size), live view stop, the wake-up and its result, resume offset, free space, done (bytes and time), cancel, and every failure with its reason. Downloader logs the HTTP conversation on port 80 ([HTTP] URL, resume offset, answer code, ETag, Content-Range, restart from 0 when Range is ignored, received bytes, connection errors). CameraFiles logs listing results and failures ([FILES]).
+- Tests: 3 new in FileDownloadTest (the wake-up is sent before the download, a busy answer does not block the download, a failure is written to the log). Not compiled or run here; run `./gradlew testDebugUnitTest` and then docs/test-plan-0.4.1.1.md on a phone.
+
 ## 0.4.1 - download of one file
 Worked as six steps. Compose and MediaStore are not compiled in JVM tests.
 
