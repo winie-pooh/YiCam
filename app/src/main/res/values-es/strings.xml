@@ -172,4 +172,26 @@
     <string name="grid_off">Cuadrícula</string>
     <string name="grid_3x3">Cuadrícula 3×3</string>
     <string name="grid_4x4">Cuadrícula 4×4</string>
+    <string name="button_download">Descargar</string>
+    <string name="button_download_resume">Reanudar</string>
+    <string name="button_download_skip">Conservar la copia del móvil</string>
+    <string name="button_download_again">Descargar de nuevo</string>
+    <string name="download_stops_live">Una descarga detiene la vista en vivo para no sobrecargar la cámara.</string>
+    <string name="download_progress">%1$s de %2$s · %3$s</string>
+    <string name="download_progress_unknown">%1$s · %2$s</string>
+    <string name="download_eta">Quedan %1$d min %2$d s</string>
+    <string name="download_eta_sec">Quedan %1$d s</string>
+    <string name="download_done">Guardado: %1$s</string>
+    <string name="download_cancelled">Descarga cancelada. Puedes reanudarla.</string>
+    <string name="download_fail_no_space">No hay espacio libre suficiente en el móvil.</string>
+    <string name="download_fail_link_lost">Se perdió el enlace con la cámara. Puedes reanudar.</string>
+    <string name="download_fail_size">El tamaño guardado no coincide con el archivo de la cámara. Puedes reanudar.</string>
+    <string name="download_fail_refused">La cámara rechazó la descarga.</string>
+    <string name="download_fail_network">La descarga falló. Puedes reanudar.</string>
+    <string name="download_already">Este archivo ya está en el móvil (mismo nombre y tamaño).</string>
+    <string name="download_folder">Guardar en</string>
+    <string name="download_folder_dialog">Carpeta de descarga</string>
+    <string name="download_folder_mediastore">Móvil (Movies/YiCam, Pictures/YiCam)</string>
+    <string name="download_folder_tree">Carpeta elegida</string>
+    <string name="download_folder_ask">Preguntar cada vez</string>
 </resources>

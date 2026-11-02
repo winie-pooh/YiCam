@@ -1,5 +1,27 @@
 # CHANGELOG
 
+## 0.4.1 - download of one file
+Worked as six steps. Compose and MediaStore are not compiled in JVM tests.
+
+### Step 1 - inventory (done)
+- Working tree already had the 0.4.1 types, UI, strings and test plan. `python tools/check_files_index.py`: OK (95 indexed files). `testDebugUnitTest`: BUILD SUCCESSFUL (cached).
+
+### Step 2 - HTTP Downloader (done)
+- `Downloader.kt`: Range + If-Range (ETag); 206 only if Content-Range start matches the sink offset; 200 (Range ignored or If-Range miss) truncates and restarts from 0; 64 KB buffer; 15 s timeouts; Long sizes; speed = 3 s window; remaining time; cancel = coroutine cancellation; `Flow<DownloadProgress>`.
+- Tests: `DownloaderTest` (10, all pass) + `RangeHttpServer`. Added: Content-Range start mismatch leaves the partial file and throws.
+
+### Step 3 - where to write (done in tree; checked)
+- `DownloadSink` / `DownloadTarget`. `MediaStoreSink.kt`: videos `Movies/YiCam/`, photos `Pictures/YiCam/`, `IS_PENDING` while writing, resume from the pending row, API 26-28 uses a `.part` file. `TreeDownloadSink.kt`: `name.part` then rename; persistable tree URI. `DownloadTargets.kt` from the app setting. SAF free-space is not StatFs (unknown); MediaStore uses StatFs.
+
+### Step 4 - one-file orchestration (done; cancel race closed)
+- `FileDownload.kt`: one download at a time; stop live view; skip if same name+size exists; free-space check; resume after cancel / size mismatch / lost link; fail reasons. Start/cancel are serialized; progress does not overwrite Cancelled; `markComplete` only while still Running. `FileDownloadTest`: 10, all pass.
+
+### Step 5 - UI and strings (done in tree; checked)
+- `FilesScreen.kt`: Download / progress (bytes, percent, speed, time left) / Cancel / Resume; destination dialog (phone, chosen folder, ask every time); note that a download stops live view. Strings EN/ES/UK. `AppPrefs` keeps the folder mode and tree URI. `ControlProvider` owns the one `FileDownload`.
+
+### Step 6 - docs (done)
+- `docs/test-plan-0.4.1.md` (+ `.uk.md`). `python tools/check_files_index.py`: OK. Full `testDebugUnitTest`: **220 tests, 0 failures** (from `app/build/test-results/testDebugUnitTest/*.xml`). Compose, MediaStore and the files screen are not compiled here. Not verified on a phone; run the test plan there.
+
 ## 0.4.0 - files: browse (read only)
 - Status screen: a "Files on the camera" button opens the files screen. Folders under `/tmp/fuse_d/DCIM` (msg_id 1283 then 1282 `-D -S`), then the files of one folder. Newest YDXJ number first; dates are shown as text only. Hidden folders (name starts with `.`, and EOSMISC) are dropped. A `.THM` is kept as the video's thumbnail name, not as its own row.
 - CameraFiles uses the existing CameraApi queue (one command at a time), so a listing of about 0.6 s only delays the next battery poll by that long. Cache lasts for one visit of the screen; Refresh reads again. Errors: not connected, timeout, camera busy (rval -21), other rval. While the camera records, the list is still requested and a note says it may be slower.

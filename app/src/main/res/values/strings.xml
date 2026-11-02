@@ -173,4 +173,26 @@
     <string name="grid_off">Grid</string>
     <string name="grid_3x3">Grid 3×3</string>
     <string name="grid_4x4">Grid 4×4</string>
+    <string name="button_download">Download</string>
+    <string name="button_download_resume">Resume</string>
+    <string name="button_download_skip">Keep the copy on the phone</string>
+    <string name="button_download_again">Download again</string>
+    <string name="download_stops_live">A download stops the live view so the camera is not overloaded.</string>
+    <string name="download_progress">%1$s of %2$s · %3$s</string>
+    <string name="download_progress_unknown">%1$s · %2$s</string>
+    <string name="download_eta">%1$d min %2$d s left</string>
+    <string name="download_eta_sec">%1$d s left</string>
+    <string name="download_done">Saved: %1$s</string>
+    <string name="download_cancelled">Download cancelled. You can resume.</string>
+    <string name="download_fail_no_space">Not enough free space on the phone.</string>
+    <string name="download_fail_link_lost">The link to the camera was lost. You can resume.</string>
+    <string name="download_fail_size">The saved size does not match the camera file. You can resume.</string>
+    <string name="download_fail_refused">The camera refused the download.</string>
+    <string name="download_fail_network">The download failed. You can resume.</string>
+    <string name="download_already">This file is already on the phone (same name and size).</string>
+    <string name="download_folder">Save to</string>
+    <string name="download_folder_dialog">Download folder</string>
+    <string name="download_folder_mediastore">Phone (Movies/YiCam, Pictures/YiCam)</string>
+    <string name="download_folder_tree">Chosen folder</string>
+    <string name="download_folder_ask">Ask every time</string>
 </resources>

@@ -172,4 +172,26 @@
     <string name="grid_off">Сітка</string>
     <string name="grid_3x3">Сітка 3×3</string>
     <string name="grid_4x4">Сітка 4×4</string>
+    <string name="button_download">Завантажити</string>
+    <string name="button_download_resume">Продовжити</string>
+    <string name="button_download_skip">Залишити копію на телефоні</string>
+    <string name="button_download_again">Завантажити знову</string>
+    <string name="download_stops_live">Завантаження зупиняє пряму трансляцію, щоб не перевантажувати камеру.</string>
+    <string name="download_progress">%1$s з %2$s · %3$s</string>
+    <string name="download_progress_unknown">%1$s · %2$s</string>
+    <string name="download_eta">Залишилось %1$d хв %2$d с</string>
+    <string name="download_eta_sec">Залишилось %1$d с</string>
+    <string name="download_done">Збережено: %1$s</string>
+    <string name="download_cancelled">Завантаження скасовано. Можна продовжити.</string>
+    <string name="download_fail_no_space">На телефоні бракує вільного місця.</string>
+    <string name="download_fail_link_lost">Зʼєднання з камерою втрачено. Можна продовжити.</string>
+    <string name="download_fail_size">Розмір на телефоні не збігається з файлом на камері. Можна продовжити.</string>
+    <string name="download_fail_refused">Камера відхилила завантаження.</string>
+    <string name="download_fail_network">Завантаження не вдалося. Можна продовжити.</string>
+    <string name="download_already">Цей файл уже є на телефоні (та сама назва і розмір).</string>
+    <string name="download_folder">Зберігати в</string>
+    <string name="download_folder_dialog">Папка завантаження</string>
+    <string name="download_folder_mediastore">Телефон (Movies/YiCam, Pictures/YiCam)</string>
+    <string name="download_folder_tree">Обрана папка</string>
+    <string name="download_folder_ask">Питати щоразу</string>
 </resources>

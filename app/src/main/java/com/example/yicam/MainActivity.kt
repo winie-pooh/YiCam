@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var controls: CameraController
     private lateinit var cameraSettings: CameraSettings
     private lateinit var cameraFiles: CameraFiles
+    private lateinit var fileDownload: FileDownload
     private lateinit var prefs: AppPrefs
 
     private val permissionLauncher =
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
         controls = ControlProvider.get(this)
         cameraSettings = ControlProvider.settings(this)
         cameraFiles = ControlProvider.files(this)
+        fileDownload = ControlProvider.download(this)
         prefs = AppPrefs(this)
         setContent {
             AppRoot(
@@ -71,6 +73,7 @@ class MainActivity : ComponentActivity() {
                 controls = controls,
                 cameraSettings = cameraSettings,
                 cameraFiles = cameraFiles,
+                fileDownload = fileDownload,
                 livePlayer = livePlayer,
                 prefs = prefs,
                 onConnect = ::connectOrChoose,
@@ -161,6 +164,7 @@ private fun AppRoot(
     controls: CameraController,
     cameraSettings: CameraSettings,
     cameraFiles: CameraFiles,
+    fileDownload: FileDownload,
     livePlayer: ExoRtspPlayer,
     prefs: AppPrefs,
     onConnect: () -> Unit,
@@ -194,6 +198,8 @@ private fun AppRoot(
                 )
                 "files" -> FilesScreen(
                     files = cameraFiles,
+                    download = fileDownload,
+                    prefs = prefs,
                     onBack = { screen = "status" },
                 )
                 else -> StatusScreen(
