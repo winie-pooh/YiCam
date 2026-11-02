@@ -1,5 +1,5 @@
 /**
- * Responsible for: downloading one HTTP file with Range resume, If-Range, a 64 KB buffer and a 3 s speed average; cancellation is coroutine cancellation.
+ * Responsible for: downloading one HTTP file with Range resume, If-Range, a 64 KB buffer and a 3 s speed average; cancellation is coroutine cancellation; the conversation (URL, answer code, resume decisions, byte counts, errors) goes to the given log.
  * Not responsible for: choosing where to write (DownloadSink.kt), free space or live view (FileDownload.kt).
  */
 package com.example.yicam
@@ -19,6 +19,7 @@ class Downloader(
         (URL(url).openConnection() as HttpURLConnection)
     },
     private val nowMs: () -> Long = { System.currentTimeMillis() },
+    private val log: (String) -> Unit = {},
 ) {
     data class Config(
         val connectTimeoutMs: Int = 15_000,
@@ -52,8 +53,14 @@ class Downloader(
                 conn.setRequestProperty("Range", "bytes=$offset-")
                 sink.etag()?.let { conn.setRequestProperty("If-Range", it) }
             }
+            log("[HTTP] GET $url" + if (offset > 0L) " (resume from $offset bytes)" else "")
             val code = conn.responseCode
             currentCoroutineContext().ensureActive()
+            log(
+                "[HTTP] answer $code" +
+                    (conn.getHeaderField("ETag")?.let { ", ETag $it" } ?: "") +
+                    (conn.getHeaderField("Content-Range")?.let { ", Content-Range $it" } ?: ""),
+            )
             if (code == HttpURLConnection.HTTP_NOT_FOUND || code == HttpURLConnection.HTTP_FORBIDDEN) {
                 throw DownloadHttpException(code)
             }
@@ -70,7 +77,10 @@ class Downloader(
                 }
                 total = range.total
             } else {
-                if (offset > 0L) sink.truncate()
+                if (offset > 0L) {
+                    log("[HTTP] the server ignored Range (200), restarting from 0")
+                    sink.truncate()
+                }
                 val length = conn.contentLengthLong
                 total = if (length >= 0L) length else null
             }
@@ -105,6 +115,7 @@ class Downloader(
             if (total != null && have != total) {
                 throw DownloadSizeException(have, total)
             }
+            log("[HTTP] received $have bytes")
             emit(snapshot())
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
@@ -115,6 +126,7 @@ class Downloader(
         } catch (e: DownloadRangeException) {
             throw e
         } catch (e: Exception) {
+            log("[HTTP] error: ${e.message ?: e.javaClass.simpleName}")
             throw DownloadNetworkException(e)
         } finally {
             sink.close()
