@@ -1,5 +1,5 @@
 /**
- * Responsible for: reading the camera's folders and files (cd to an absolute path, then list): cache for one screen visit, error mapping (not connected, timeout, camera busy).
+ * Responsible for: reading the camera's folders and files (cd to an absolute path, then list): cache for one screen visit, error mapping (not connected, timeout, camera busy), and logging of results and failures to the traffic log.
  * Not responsible for: parsing listings (ListingParser.kt), drawing (FilesScreen.kt) or the link to the camera (CameraSession.kt).
  */
 package com.example.yicam
@@ -113,6 +113,7 @@ class CameraFiles(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                session.log.sys("[FILES] [ERR] folder list failed: ${e.message ?: e.javaClass.simpleName}")
                 local.update { it.copy(loading = false, problem = problemOf(e)) }
             }
         }
@@ -137,6 +138,7 @@ class CameraFiles(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
+                session.log.sys("[FILES] [ERR] list of $folder failed: ${e.message ?: e.javaClass.simpleName}")
                 local.update { it.copy(loading = false, folder = folder, problem = problemOf(e)) }
             }
         }
@@ -148,6 +150,7 @@ class CameraFiles(
         val reply = fetchListing(ListingParser.MEDIA_ROOT)
         val folders = ListingParser.folders(reply)
         folderCache = folders
+        session.log.sys("[FILES] ${folders.size} folders on the camera")
         return folders
     }
 
@@ -157,6 +160,7 @@ class CameraFiles(
         val reply = fetchListing("${ListingParser.MEDIA_ROOT}/$folder")
         val files = ListingParser.files(reply, folder)
         fileCache[folder] = files
+        session.log.sys("[FILES] $folder: ${files.size} files")
         return files
     }
 

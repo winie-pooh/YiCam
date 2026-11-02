@@ -1,5 +1,5 @@
 /**
- * Responsible for: tests of FileDownload (skip if already there, free space, resume after a cut, cancel, size mismatch, camera refused, link lost).
+ * Responsible for: tests of FileDownload (skip if already there, free space, resume after a cut, cancel, size mismatch, camera refused, link lost, the web server wake-up, failures in the log).
  * Not responsible for: HTTP details (DownloaderTest.kt) or Android storage.
  */
 package com.example.yicam
@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch
 class FileDownloadTest {
     private lateinit var camera: FakeCameraServer
     private lateinit var scope: CoroutineScope
+    private lateinit var log: TrafficLog
     private lateinit var session: CameraSession
     private lateinit var target: MemoryDownloadTarget
     private var liveStopped = 0
@@ -30,9 +31,10 @@ class FileDownloadTest {
     fun setUp() {
         camera = FakeCameraServer()
         scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        log = TrafficLog()
         session = CameraSession(
             FakeCameraNetwork(),
-            TrafficLog(),
+            log,
             scope,
             CameraSession.Config(
                 host = "127.0.0.1",
@@ -74,6 +76,7 @@ class FileDownloadTest {
         targetOf = { target },
         onStopLive = { liveStopped++ },
         urlOf = { http.url },
+        wakeDelayMs = 10L,
     )
 
     private fun sample(size: Int = 40_000) = FileEntry(
@@ -232,6 +235,50 @@ class FileDownloadTest {
             download.replaceExisting()
             waitUntil("done") { download.state.value is DownloadState.Done }
             assertArrayEquals(body, target.sink.content)
+        }
+    }
+
+    @Test
+    fun start_wakesTheWebServer_beforeTheDownload() = test {
+        connect()
+        val body = ByteArray(10_000) { it.toByte() }
+        RangeHttpServer(body).use { http ->
+            val download = downloader(http)
+            download.start(sample(body.size))
+            waitUntil("done") { download.state.value is DownloadState.Done }
+            assertTrue(
+                "the web server wake-up (msg_id 259 none_force) was sent",
+                camera.received.any { it.contains("\"msg_id\":259,") && it.contains("none_force") },
+            )
+        }
+    }
+
+    @Test
+    fun wake_answeredBusy_theDownloadStillRuns() = test {
+        connect()
+        camera.previewRval = -21
+        val body = ByteArray(10_000) { it.toByte() }
+        RangeHttpServer(body).use { http ->
+            val download = downloader(http)
+            download.start(sample(body.size))
+            waitUntil("done") { download.state.value is DownloadState.Done }
+            assertArrayEquals(body, target.sink.content)
+            assertTrue(log.lines.value.any { it.contains("[DL]") && it.contains("-21") })
+        }
+    }
+
+    @Test
+    fun failure_isWrittenToTheLog() = test {
+        connect()
+        RangeHttpServer(byteArrayOf(1), statusOverride = 403).use { http ->
+            val download = downloader(http)
+            download.start(sample(1))
+            waitUntil("refused") {
+                (download.state.value as? DownloadState.Failed)?.reason == DownloadFailReason.CAMERA_REFUSED
+            }
+            waitUntil("log line") {
+                log.lines.value.any { it.contains("[DL]") && it.contains("FAILED") && it.contains("403") }
+            }
         }
     }
 }
