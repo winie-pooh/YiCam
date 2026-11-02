@@ -66,6 +66,22 @@
     <string name="note_not_connected">La cámara no está conectada.</string>
     <string name="title_camera_settings">Ajustes de la cámara</string>
     <string name="button_camera_settings">Ajustes de la cámara</string>
+    <string name="button_files">Archivos de la cámara</string>
+    <string name="title_files">Archivos</string>
+    <string name="button_refresh_files">Actualizar</string>
+    <string name="files_loading">Leyendo la carpeta…</string>
+    <string name="files_empty">No hay archivos en esta carpeta.</string>
+    <string name="files_no_folders">No se encontraron carpetas.</string>
+    <string name="files_not_connected">La cámara no está conectada.</string>
+    <string name="files_timeout">La cámara no respondió a tiempo.</string>
+    <string name="files_busy">La cámara está ocupada. Prueba de nuevo cuando termine la grabación.</string>
+    <string name="files_failed">No se pudieron leer los archivos: %1$s</string>
+    <string name="files_recording_note">La cámara está grabando. La lista se pide igual; puede ser más lenta.</string>
+    <string name="files_kind_video">Vídeo</string>
+    <string name="files_kind_photo">Foto</string>
+    <string name="files_kind_other">Archivo</string>
+    <string name="files_size_kind">%1$s · %2$s</string>
+    <string name="files_size_date_kind">%1$s · %2$s · %3$s</string>
     <string name="button_reload">Recargar</string>
     <string name="button_sync_clock">Poner el reloj de la cámara con la hora del móvil</string>
     <string name="button_apply">Aplicar (%1$d)</string>
@@ -95,7 +111,7 @@
     <string name="setting_timelapse_video_resolution">Resolución del time-lapse de vídeo</string>
     <string name="setting_record_photo_time">Foto durante la grabación, intervalo</string>
     <string name="setting_emergency_file_backup">Copia de emergencia del archivo</string>
-    <string name="setting_warp_enable">Corrección de distorsión</string>
+    <string name="setting_warp_enable">Gran angular / corrección de distorsión</string>
     <string name="setting_auto_low_light">Poca luz automática</string>
     <string name="setting_photo_size">Tamaño de foto</string>
     <string name="setting_photo_quality">Calidad de foto</string>
@@ -104,7 +120,7 @@
     <string name="setting_precise_cont_time">Duración del time-lapse de fotos</string>
     <string name="setting_burst_capture_number">Velocidad de ráfaga</string>
     <string name="setting_precise_selftime">Retardo del temporizador</string>
-    <string name="setting_meter_mode">Modo de medición</string>
+    <string name="setting_meter_mode">Modo de medición (exposición)</string>
     <string name="setting_buzzer_volume">Volumen del pitido</string>
     <string name="setting_buzzer_ring">Timbre del zumbador</string>
     <string name="setting_led_mode">Indicadores LED</string>
@@ -150,4 +166,10 @@
     <string name="opt_rc_button_mode_record_capture">Botones de grabar y foto</string>
     <string name="settings_recording">La cámara está grabando un vídeo. Detén la grabación para cambiar los ajustes.</string>
     <string name="settings_stop_recording">Detener la grabación de vídeo</string>
+    <string name="live_orient_left">Vertical ↺</string>
+    <string name="live_orient_right">Vertical ↻</string>
+    <string name="live_orient_none">Horizontal</string>
+    <string name="grid_off">Cuadrícula</string>
+    <string name="grid_3x3">Cuadrícula 3×3</string>
+    <string name="grid_4x4">Cuadrícula 4×4</string>
 </resources>

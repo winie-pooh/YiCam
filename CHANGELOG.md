@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.4.0 - files: browse (read only)
+- Status screen: a "Files on the camera" button opens the files screen. Folders under `/tmp/fuse_d/DCIM` (msg_id 1283 then 1282 `-D -S`), then the files of one folder. Newest YDXJ number first; dates are shown as text only. Hidden folders (name starts with `.`, and EOSMISC) are dropped. A `.THM` is kept as the video's thumbnail name, not as its own row.
+- CameraFiles uses the existing CameraApi queue (one command at a time), so a listing of about 0.6 s only delays the next battery poll by that long. Cache lasts for one visit of the screen; Refresh reads again. Errors: not connected, timeout, camera busy (rval -21), other rval. While the camera records, the list is still requested and a note says it may be slower.
+- Probe screen (dev tool): guarded delete probe. Type the absolute path of a sacrificial photo, confirm, send candidate msg_id 1281, then list the parent folder. The command is a guess [VERIFY]; the full reply goes to the log. Not a user-facing delete.
+- New: FileModels.kt, ListingParser.kt, CameraFiles.kt, FilesScreen.kt. Strings EN/ES/UK. ControlProvider now also owns CameraFiles.
+- Tests: ListingParserTest (8), CameraFilesTest (8). FakeCameraServer answers 1282/1283 with a current folder. CameraSettingsTest.load_showsOnlySettableListsWithAChoice now includes warp_enable and meter_mode (missed in 0.3.5). JVM run here: 200 tests, 198 passed; that settings assertion failed before the fix; LiveViewControllerTest.recordingStartsWhilePlaying_... failed once (preview command count 1 instead of 2 after vf_start — a 0.3.4 race, not a files change). Compose files are not compiled here.
+- docs/test-plan-0.4.0.md (+ .uk.md). Delete result: not run on the camera; see docs/protocol-findings.md.
+
+## 0.3.5 - vertical live view, grid, two more settings
+- Based on 0.3.4 as the owner returned to it; the camera clock set at every connect (old 0.3.5) is not part of this version.
+- Live view: the picture is vertical by default (camera on its left side) and takes most of the screen. The title and the bottom Start/Stop row are gone; small buttons over the picture: back, orientation (Vertical left, Vertical right, Horizontal), grid, Start/Stop. The video is now a TextureView (a SurfaceView cannot be turned). The sizes are calculated in LiveOrientation.kt (LiveLayout.fit), the choice is kept in AppPrefs.kt. Assumption: with the camera on its left side the picture must be turned counterclockwise; the button gives the other direction.
+- Grid on the live picture: off, 3x3, 4x4 (GridGeometry.kt), drawn by the phone, kept after closing the app.
+- Settings: warp_enable and meter_mode were missing because the camera does not list their values (the screen shows only settings with at least two values). They now have built-in values (SettingsCatalog.BUILT_IN_OPTIONS: on/off and center/average/spot), are shown in the Video group and are sent like any other setting. Names: "Wide angle / lens distortion correction" and "Metering mode (exposure)". [VERIFY on the camera: whether it accepts them and which warp_enable value is the wide picture.]
+- Not done: choosing the metering point on the picture (spot) - no command for it is known; white balance, ISO, sharpness and EV from the original app are not in the camera's setting list.
+- Tests: LiveOrientationTest (7), GridGeometryTest (6), 2 new in CameraSettingsTest, one expectation changed (rows_areInCatalogOrder): 15 new tests. Not compiled or run here; the Compose files (LiveScreen, MainActivity) and the TextureView change in ExoRtspPlayer are unchecked.
+- docs/test-plan-0.3.5.md (+ .uk.md).
+
 ## 0.3.4 - live view during a recording (experiment)
 - Phone log (RTSP trace 20 s into a recording): msg_id 259 answered rval -21, but the camera's RTSP server answered OPTIONS and DESCRIBE with 200 and the SDP. RTP over TCP is refused (461) as always. So a stream during recording may exist; the trace had used TCP and could not tell.
 - LiveViewController: while the camera records (app_status record/recording) or answers 259 with -21, the stream is started without the preview command. If a recording starts while the preview plays, the old session is closed and the stream is tried again once without the command. If no picture comes while the camera really records, the screen says so and waits for vf_start as before. When a stream that played during a recording ends, the next start decides again.

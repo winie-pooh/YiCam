@@ -67,6 +67,22 @@
     <string name="note_not_connected">The camera is not connected.</string>
     <string name="title_camera_settings">Camera settings</string>
     <string name="button_camera_settings">Camera settings</string>
+    <string name="button_files">Files on the camera</string>
+    <string name="title_files">Files</string>
+    <string name="button_refresh_files">Refresh</string>
+    <string name="files_loading">Reading the folder…</string>
+    <string name="files_empty">No files in this folder.</string>
+    <string name="files_no_folders">No folders found.</string>
+    <string name="files_not_connected">The camera is not connected.</string>
+    <string name="files_timeout">The camera did not answer in time.</string>
+    <string name="files_busy">The camera is busy. Try again after the recording stops.</string>
+    <string name="files_failed">Could not read the files: %1$s</string>
+    <string name="files_recording_note">The camera is recording. The list is still requested; it may be slower.</string>
+    <string name="files_kind_video">Video</string>
+    <string name="files_kind_photo">Photo</string>
+    <string name="files_kind_other">File</string>
+    <string name="files_size_kind">%1$s · %2$s</string>
+    <string name="files_size_date_kind">%1$s · %2$s · %3$s</string>
     <string name="button_reload">Reload</string>
     <string name="button_sync_clock">Set camera clock to phone time</string>
     <string name="button_apply">Apply (%1$d)</string>
@@ -96,7 +112,7 @@
     <string name="setting_timelapse_video_resolution">Time-lapse video resolution</string>
     <string name="setting_record_photo_time">Photo while recording, interval</string>
     <string name="setting_emergency_file_backup">Emergency file backup</string>
-    <string name="setting_warp_enable">Lens distortion correction</string>
+    <string name="setting_warp_enable">Wide angle / lens distortion correction</string>
     <string name="setting_auto_low_light">Auto low light</string>
     <string name="setting_photo_size">Photo size</string>
     <string name="setting_photo_quality">Photo quality</string>
@@ -105,7 +121,7 @@
     <string name="setting_precise_cont_time">Time-lapse photo duration</string>
     <string name="setting_burst_capture_number">Burst speed</string>
     <string name="setting_precise_selftime">Self-timer delay</string>
-    <string name="setting_meter_mode">Metering mode</string>
+    <string name="setting_meter_mode">Metering mode (exposure)</string>
     <string name="setting_buzzer_volume">Beep volume</string>
     <string name="setting_buzzer_ring">Buzzer ring</string>
     <string name="setting_led_mode">LED indicators</string>
@@ -151,4 +167,10 @@
     <string name="opt_rc_button_mode_record_capture">Record and photo buttons</string>
     <string name="settings_recording">The camera is recording a video. Stop the recording to change the settings.</string>
     <string name="settings_stop_recording">Stop video recording</string>
+    <string name="live_orient_left">Vertical ↺</string>
+    <string name="live_orient_right">Vertical ↻</string>
+    <string name="live_orient_none">Horizontal</string>
+    <string name="grid_off">Grid</string>
+    <string name="grid_3x3">Grid 3×3</string>
+    <string name="grid_4x4">Grid 4×4</string>
 </resources>

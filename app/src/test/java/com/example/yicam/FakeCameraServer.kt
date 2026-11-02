@@ -41,6 +41,16 @@ class FakeCameraServer : AutoCloseable {
     val forcedRval = java.util.concurrent.ConcurrentHashMap<Int, Int>()
     @Volatile var zoom = 0
 
+    /** Absolute path of the last successful msg_id 1283 (the camera's current folder). */
+    @Volatile var currentDir = "/tmp/fuse_d/DCIM"
+
+    /** JSON replies of msg_id 1282 keyed by absolute folder path (no trailing slash). */
+    val listings = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    fun setListing(absolutePath: String, json: String) {
+        listings[absolutePath.trimEnd('/')] = json
+    }
+
     private val nextToken = AtomicInteger(1)
     @Volatile private var validToken = -1
     @Volatile private var client: Socket? = null
@@ -155,8 +165,13 @@ class FakeCameraServer : AutoCloseable {
                 """{"rval":0,"msg_id":14}"""
             }
             msgId == 15 -> """{ "rval": 0, "msg_id": 15, "param": "$zoom" }"""
-            msgId == 1283 -> Fixtures.CHDIR_REPLY
-            msgId == 1282 -> Fixtures.LISTING_REPLY
+            msgId == 1283 -> {
+                val path = request["param"] as? String
+                if (path != null) currentDir = path.trimEnd('/')
+                Fixtures.chdirReply(path ?: currentDir)
+            }
+            msgId == 1282 -> listings[currentDir]
+                ?: if (currentDir == "/tmp/fuse_d/DCIM") Fixtures.LISTING_REPLY else Fixtures.listingReply()
             msgId == 259 -> if (previewRval == 0) Fixtures.START_PREVIEW_REPLY else """{"rval":$previewRval,"msg_id":259}"""
             else -> """{"rval":0,"msg_id":$msgId}"""
         }

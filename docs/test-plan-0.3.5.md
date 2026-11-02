@@ -1,0 +1,8 @@
+# Test plan 0.3.5
+Report: a screenshot of the live screen (vertical) and your answers to the questions marked WRITE DOWN.
+1. Open the live view. The picture is vertical by default (the camera stands on its LEFT side) and takes most of the screen. WRITE DOWN: is the picture the right way up? If not, press the orientation button (top left over the picture): it cycles Vertical left, Vertical right, Horizontal. The choice is kept after closing the app.
+2. Orientation button: with the camera on its right side the picture is the right way up in "Vertical right"; "Horizontal" shows the picture as the camera sends it. Rotate the phone and leave and re-enter the live view: no crash, the stream continues or restarts.
+3. Grid button: each press gives Grid 3x3, Grid 4x4, Grid (off). The lines lie on the picture in every orientation. The choice is kept.
+4. Back, Start and Stop buttons over the picture work like before (the bottom Start/Stop row is gone). Photo/video buttons, zoom and recording below the picture work as before. A recording started from the camera: the live view still continues (0.3.4).
+5. Open Camera settings: there are two new rows, "Wide angle / lens distortion correction" (a switch) and "Metering mode (exposure)" (center, average, spot). They are in the Video group. WRITE DOWN: do the rows show the camera's real current value?
+6. Change the metering mode and press Apply: the camera accepts it or the row stays marked as changed. WRITE DOWN what happens. Do the same for the wide angle switch, then check the live picture: WRITE DOWN which position (on/off) gives the wide fisheye picture.

@@ -1,5 +1,5 @@
 /**
- * Responsible for: what the settings screen knows about camera setting keys: which are hidden, which group a key belongs to, the order inside a group and which values mean a switch, and how a value is turned into a resource name for its translation.
+ * Responsible for: what the settings screen knows about camera setting keys: which are hidden, which group a key belongs to, the order inside a group and which values mean a switch, the built-in values of settings the camera does not list, and how a value is turned into a resource name for its translation.
  * Not responsible for: reading or changing settings (CameraSettings.kt), drawing (SettingsScreen.kt) or the translated names (the strings.xml files: setting_<key>).
  */
 package com.example.yicam
@@ -21,6 +21,15 @@ object SettingsCatalog {
     /** Settings whose allowed values change when the video standard changes. */
     val DEPENDS_ON_VIDEO_STANDARD: Set<String> = setOf("video_resolution", "timelapse_video_resolution")
 
+    /**
+     * Settings the camera reports but does not list with values ("readonly:" with nothing after it), so they were missing from the
+     * screen. They get these built-in values and are sent like any other setting; if the camera refuses, the row stays marked as changed.
+     */
+    val BUILT_IN_OPTIONS: List<Pair<String, List<String>>> = listOf(
+        "warp_enable" to listOf("on", "off"),
+        "meter_mode" to listOf("center", "average", "spot"),
+    )
+
     const val VIDEO_STANDARD = "video_standard"
     const val CAMERA_CLOCK = "camera_clock"
 
@@ -28,11 +37,11 @@ object SettingsCatalog {
         SettingGroup.VIDEO to listOf(
             VIDEO_STANDARD, "video_resolution", "video_quality", "video_stamp", "video_rotate", "loop_record",
             "rec_mode", "rec_default_mode", "timelapse_video", "timelapse_video_resolution", "record_photo_time",
-            "emergency_file_backup", "warp_enable", "auto_low_light",
+            "emergency_file_backup", "warp_enable", "meter_mode", "auto_low_light",
         ),
         SettingGroup.PHOTO to listOf(
             "photo_size", "photo_quality", "photo_stamp", "capture_default_mode", "precise_cont_time",
-            "burst_capture_number", "precise_selftime", "meter_mode",
+            "burst_capture_number", "precise_selftime",
         ),
         SettingGroup.SOUND_LED to listOf("buzzer_volume", "buzzer_ring", "led_mode", "osd_enable"),
         SettingGroup.SYSTEM to listOf(

@@ -1,5 +1,5 @@
 /**
- * Responsible for: the actions behind the probe screen (dev tool): canned probe commands (including the settings options dump), the RTSP trace (RtspProbe.kt), raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
+ * Responsible for: the actions behind the probe screen (dev tool): canned probe commands (including the settings options dump), the RTSP trace (RtspProbe.kt), the guarded delete probe (candidate msg_id 1281), raw commands, log access, connect/disconnect forwarded to the session. Survives screen rotation.
  * Not responsible for: drawing the screen or asking for permissions (MainActivity.kt, ProbeScreen.kt), the link to the camera (CameraSession.kt) or the protocol (CameraApi.kt).
  */
 package com.example.yicam
@@ -51,6 +51,29 @@ class ProbeController private constructor(private val session: CameraSession) {
 
     fun sendRaw(json: String) = launchCommand { it.sendRaw(json) }
 
+    /**
+     * Tries the unconfirmed delete candidate (msg_id 1281, absolute path) then lists the parent folder.
+     * [VERIFY] on a sacrificial photo; the full reply is written to the log.
+     */
+    fun probeDelete(absolutePath: String) {
+        val path = absolutePath.trim()
+        if (path.isEmpty()) {
+            log.sys("[DELETE-PROBE] empty path")
+            return
+        }
+        launchCommand { api ->
+            log.sys("[DELETE-PROBE] candidate msg_id $DELETE_CANDIDATE_MSG_ID (not confirmed). path=$path")
+            val reply = api.send(DELETE_CANDIDATE_MSG_ID, listOf("param" to path))
+            log.sys("[DELETE-PROBE] rval=${reply.rval} raw=${reply.raw}")
+            val parent = path.substringBeforeLast('/', "")
+            if (parent.isNotEmpty()) {
+                api.send(Cmd.CHANGE_DIR, listOf("param" to parent))
+            }
+            api.send(Cmd.LIST_FILES, listOf("param" to ListingParser.LIST_PARAM))
+            log.sys("[DELETE-PROBE] listed the parent folder after the attempt; check whether the file is gone")
+        }
+    }
+
     /** Starts the preview, then writes a full RTSP conversation with the camera to the log (see RtspProbe). */
     fun rtspTrace() {
         val current = session.currentApi
@@ -91,6 +114,8 @@ class ProbeController private constructor(private val session: CameraSession) {
 
     companion object {
         private const val RTSP_PORT = 554
+        /** Guess from the original API; not seen on this camera yet. */
+        const val DELETE_CANDIDATE_MSG_ID = 1281
         private val SECRET_OPTION_KEYS = setOf("wifi_password", "serial_number")
 
         @Volatile

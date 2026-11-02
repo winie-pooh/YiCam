@@ -1,11 +1,11 @@
 /**
- * Responsible for: playing the camera's RTSP stream with Media3 ExoPlayer (RTP over TCP, small buffers) into a SurfaceView, and logging the player's states and errors.
+ * Responsible for: playing the camera's RTSP stream with Media3 ExoPlayer (RTP over TCP, small buffers) into a TextureView (it can be turned, a SurfaceView cannot), and logging the player's states and errors.
  * Not responsible for: starting the preview on the camera or retrying (LiveViewController.kt) or the screen layout (LiveScreen.kt).
  */
 package com.example.yicam
 
 import android.content.Context
-import android.view.SurfaceView
+import android.view.TextureView
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -22,17 +22,17 @@ import kotlinx.coroutines.flow.asStateFlow
 @OptIn(UnstableApi::class)
 class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) : StreamPlayer {
     private var player: ExoPlayer? = null
-    private var surface: SurfaceView? = null
+    private var surface: TextureView? = null
     private val _videoAspect = MutableStateFlow(DEFAULT_ASPECT)
 
     /** Width divided by height of the stream, 16:9 until the player knows the real size. */
     val videoAspect: StateFlow<Float> = _videoAspect.asStateFlow()
 
     /** Gives the player the view to draw on (null detaches). Call on the main thread. */
-    fun attachSurface(view: SurfaceView?) {
+    fun attachSurface(view: TextureView?) {
         surface = view
         val current = player ?: return
-        if (view != null) current.setVideoSurfaceView(view) else current.clearVideoSurface()
+        if (view != null) current.setVideoTextureView(view) else current.clearVideoSurface()
     }
 
     /** Call on the main thread. */
@@ -71,7 +71,7 @@ class ExoRtspPlayer(private val context: Context, private val log: TrafficLog) :
                 listener.onError("${error.errorCodeName}: $chain")
             }
         })
-        surface?.let { exo.setVideoSurfaceView(it) }
+        surface?.let { exo.setVideoTextureView(it) }
         val source = RtspMediaSource.Factory()
             .setForceUseRtpTcp(useTcp)
             .setTimeoutMs(RTSP_TIMEOUT_MS)

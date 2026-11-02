@@ -73,4 +73,12 @@ object Fixtures {
 
     const val LISTING_REPLY =
         """{"rval":0,"msg_id":1282,"listing":[{"101MEDIA/":"0 bytes|2025-10-14 17:05:56"},{"Camera/":"0 bytes|2025-10-15 00:07:02"},{"EOSMISC/":"0 bytes|2024-01-23 20:07:14"},{"102MEDIA/":"0 bytes|2008-03-09 06:26:52"}]}"""
+
+    fun chdirReply(path: String): String =
+        MiniJson.toJson(linkedMapOf("rval" to 0L, "msg_id" to 1283L, "pwd" to path))
+
+    fun listingReply(vararg entries: Pair<String, String>): String {
+        val listing = entries.map { (name, meta) -> mapOf(name to meta) }
+        return MiniJson.toJson(linkedMapOf("rval" to 0L, "msg_id" to 1282L, "listing" to listing))
+    }
 }

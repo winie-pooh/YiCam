@@ -1,6 +1,6 @@
 /**
- * Responsible for: the single activity: choosing between the status, live view, camera settings and probe screens, asking for the local network permission, the Connect button (connects at once when the phone is already on the camera Wi-Fi, otherwise opens the system Wi-Fi list and connects when the user comes back), telling the session when the app goes to the background and stopping the live view then, Share log.
- * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
+ * Responsible for: the single activity: choosing between the status, live view, camera settings, files and probe screens, asking for the local network permission, the Connect button (connects at once when the phone is already on the camera Wi-Fi, otherwise opens the system Wi-Fi list and connects when the user comes back), telling the session when the app goes to the background and stopping the live view then, Share log.
+ * Not responsible for: drawing the screens (StatusScreen.kt, LiveScreen.kt, SettingsScreen.kt, FilesScreen.kt, ProbeScreen.kt) or any link, protocol or video logic (CameraSession.kt, LiveViewController.kt).
  */
 package com.example.yicam
 
@@ -39,6 +39,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var live: LiveViewController
     private lateinit var controls: CameraController
     private lateinit var cameraSettings: CameraSettings
+    private lateinit var cameraFiles: CameraFiles
+    private lateinit var prefs: AppPrefs
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -59,6 +61,8 @@ class MainActivity : ComponentActivity() {
         live = liveParts.controller
         controls = ControlProvider.get(this)
         cameraSettings = ControlProvider.settings(this)
+        cameraFiles = ControlProvider.files(this)
+        prefs = AppPrefs(this)
         setContent {
             AppRoot(
                 session = session,
@@ -66,7 +70,9 @@ class MainActivity : ComponentActivity() {
                 live = live,
                 controls = controls,
                 cameraSettings = cameraSettings,
+                cameraFiles = cameraFiles,
                 livePlayer = livePlayer,
+                prefs = prefs,
                 onConnect = ::connectOrChoose,
                 onShareLog = ::shareLog,
                 onOpenSettings = ::openAppSettings,
@@ -154,12 +160,14 @@ private fun AppRoot(
     live: LiveViewController,
     controls: CameraController,
     cameraSettings: CameraSettings,
+    cameraFiles: CameraFiles,
     livePlayer: ExoRtspPlayer,
+    prefs: AppPrefs,
     onConnect: () -> Unit,
     onShareLog: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
-    // "status", "live", "settings" or "probe"
+    // "status", "live", "settings", "files" or "probe"
     var screen by rememberSaveable { mutableStateOf("status") }
     BackHandler(enabled = screen != "status") { screen = "status" }
     MaterialTheme(colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()) {
@@ -176,11 +184,16 @@ private fun AppRoot(
                     controller = live,
                     player = livePlayer,
                     controls = controls,
+                    prefs = prefs,
                     onBack = { screen = "status" },
                 )
                 "settings" -> SettingsScreen(
                     settings = cameraSettings,
                     controls = controls,
+                    onBack = { screen = "status" },
+                )
+                "files" -> FilesScreen(
+                    files = cameraFiles,
                     onBack = { screen = "status" },
                 )
                 else -> StatusScreen(
@@ -190,6 +203,7 @@ private fun AppRoot(
                     onOpenProbe = { screen = "probe" },
                     onOpenLive = { screen = "live" },
                     onOpenCameraSettings = { screen = "settings" },
+                    onOpenFiles = { screen = "files" },
                 )
             }
         }

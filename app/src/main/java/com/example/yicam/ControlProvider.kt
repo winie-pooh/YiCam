@@ -1,6 +1,6 @@
 /**
- * Responsible for: creating the one CameraController and the one CameraSettings of the app, so they keep their state when the activity is recreated.
- * Not responsible for: the control logic (CameraController.kt), the settings logic (CameraSettings.kt) or the screens (ControlPanel.kt, SettingsScreen.kt).
+ * Responsible for: creating the one CameraController, the one CameraSettings and the one CameraFiles of the app, so they keep their state when the activity is recreated.
+ * Not responsible for: the control logic (CameraController.kt), the settings logic (CameraSettings.kt), the files logic (CameraFiles.kt) or the screens (ControlPanel.kt, SettingsScreen.kt, FilesScreen.kt).
  */
 package com.example.yicam
 
@@ -15,6 +15,17 @@ object ControlProvider {
 
     @Volatile
     private var settingsInstance: CameraSettings? = null
+
+    @Volatile
+    private var filesInstance: CameraFiles? = null
+
+    fun files(context: Context): CameraFiles =
+        filesInstance ?: synchronized(this) {
+            filesInstance ?: CameraFiles(
+                SessionProvider.get(context.applicationContext),
+                CoroutineScope(SupervisorJob() + Dispatchers.Default),
+            ).also { filesInstance = it }
+        }
 
     fun settings(context: Context): CameraSettings =
         settingsInstance ?: synchronized(this) {

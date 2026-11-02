@@ -43,6 +43,9 @@ The camera Wi-Fi gives the phone 192.168.42.2; the camera is 192.168.42.1, JSON 
 - Dates are unreliable: the camera clock was 2008-03-23, while some folders carry 2024/2025 dates.
 - Folder contents (files) were not seen in the phone probe; see plan section 11.1 for the PC probe results.
 
+## Delete command [VERIFY]
+- Not seen on this camera. The 0.4.0 probe screen can send candidate `msg_id 1281` with `param` = absolute path, then `1283` to the parent folder and `1282 -D -S`. Use a sacrificial photo. Record: rval of 1281, the raw reply, and whether the file is gone from the next listing. Do not add 1281 to Cmd.kt until that is confirmed.
+
 ## Live view on a phone (log of 2026-10-13, Android 17, Media3 1.8.0)
 - RTSP over TCP: SETUP is answered "461" (unsupported transport) every time. The camera does not do interleaved TCP. UDP (the player's default) works: video 640x480, first picture 0.46-0.74 s after the preview command.
 - The user measured a delay of about 3-4 s (not yet split into camera, Wi-Fi and player parts) and saw stripes of glitches about every 10-15 minutes in poor light only (none on another day): probably UDP packet loss when the encoder makes bigger frames.

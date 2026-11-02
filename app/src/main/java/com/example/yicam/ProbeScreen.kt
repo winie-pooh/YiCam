@@ -1,5 +1,5 @@
 /**
- * Responsible for: the probe screen (dev tool, English text only): connection buttons, canned and raw commands, the RTSP trace button, log view, Share log, a way back to the status screen.
+ * Responsible for: the probe screen (dev tool, English text only): connection buttons, canned and raw commands, the RTSP trace button, the guarded delete probe, log view, Share log, a way back to the status screen.
  * Not responsible for: any network or protocol logic (ProbeController.kt, CameraSession.kt) or the localized status screen (StatusScreen.kt).
  */
 package com.example.yicam
@@ -14,11 +14,13 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,6 +44,8 @@ fun ProbeScreen(
     val state by controller.state.collectAsState()
     val lines by controller.log.lines.collectAsState()
     var raw by rememberSaveable { mutableStateOf("""{"msg_id":13}""") }
+    var deletePath by rememberSaveable { mutableStateOf("/tmp/fuse_d/DCIM/101MEDIA/YDXJ0001.jpg") }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     val connected = state is SessionState.Connected
     val tight = PaddingValues(horizontal = 4.dp)
 
@@ -80,6 +84,43 @@ fun ProbeScreen(
             Button(onClick = controller::listFiles, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("ls") }
             Button(onClick = controller::rtspTrace, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("RTSP trace") }
             Button(onClick = controller::dumpOptions, enabled = connected, modifier = Modifier.weight(1f), contentPadding = tight) { Text("Options") }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            OutlinedTextField(
+                value = deletePath,
+                onValueChange = { deletePath = it },
+                label = { Text("Delete probe: absolute path of a sacrificial photo") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            Button(
+                onClick = { confirmDelete = true },
+                enabled = connected,
+                contentPadding = tight,
+            ) { Text("Delete?") }
+        }
+
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text("Try unconfirmed delete?") },
+                text = {
+                    Text(
+                        "Sends msg_id 1281 with this path, then lists the folder. The command is a guess. " +
+                            "Use a sacrificial photo. Path:\n$deletePath",
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        confirmDelete = false
+                        controller.probeDelete(deletePath)
+                    }) { Text("Send 1281") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                },
+            )
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {

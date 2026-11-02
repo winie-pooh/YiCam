@@ -133,7 +133,17 @@ class CameraSettingsTest {
         connectAndLoad()
         val keys = state().rows.map { it.key }.toSet()
         assertEquals(
-            setOf("video_standard", "video_resolution", "video_quality", "video_stamp", "buzzer_volume", "buzzer_ring", "burst_capture_number"),
+            setOf(
+                "video_standard",
+                "video_resolution",
+                "video_quality",
+                "video_stamp",
+                "warp_enable",
+                "meter_mode",
+                "buzzer_volume",
+                "buzzer_ring",
+                "burst_capture_number",
+            ),
             keys,
         )
         assertEquals(SettingGroup.VIDEO, row("video_resolution").group)
@@ -158,7 +168,27 @@ class CameraSettingsTest {
     fun rows_areInCatalogOrder() = test {
         connectAndLoad()
         val keys = state().rows.map { it.key }
-        assertEquals(listOf("video_standard", "video_resolution", "video_quality", "video_stamp", "burst_capture_number", "buzzer_volume", "buzzer_ring"), keys)
+        assertEquals(listOf("video_standard", "video_resolution", "video_quality", "video_stamp", "warp_enable", "meter_mode", "burst_capture_number", "buzzer_volume", "buzzer_ring"), keys)
+    }
+
+    @Test
+    fun settingsTheCameraDoesNotList_getBuiltInValues() = test {
+        connectAndLoad()
+        assertEquals(listOf("on", "off"), row("warp_enable").options)
+        assertTrue(row("warp_enable").isSwitch)
+        assertEquals(listOf("center", "average", "spot"), row("meter_mode").options)
+        assertEquals("center", row("meter_mode").value)
+        assertEquals(false, row("meter_mode").locked)
+    }
+
+    @Test
+    fun builtInSetting_isSentLikeAnyOther() = test {
+        connectAndLoad()
+        settings.edit("meter_mode", "spot")
+        waitUntil("edited") { state().changedCount == 1 }
+        settings.apply()
+        waitUntil("sent") { sentSettings().isNotEmpty() }
+        assertEquals("""{"msg_id":2,"token":1,"type":"meter_mode","param":"spot"}""", sentSettings().single())
     }
 
     @Test

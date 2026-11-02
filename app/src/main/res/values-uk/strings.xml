@@ -66,6 +66,22 @@
     <string name="note_not_connected">Камеру не підключено.</string>
     <string name="title_camera_settings">Налаштування камери</string>
     <string name="button_camera_settings">Налаштування камери</string>
+    <string name="button_files">Файли на камері</string>
+    <string name="title_files">Файли</string>
+    <string name="button_refresh_files">Оновити</string>
+    <string name="files_loading">Читаю папку…</string>
+    <string name="files_empty">У цій папці немає файлів.</string>
+    <string name="files_no_folders">Папок не знайдено.</string>
+    <string name="files_not_connected">Камера не підключена.</string>
+    <string name="files_timeout">Камера не відповіла вчасно.</string>
+    <string name="files_busy">Камера зайнята. Спробуйте знову після зупинки запису.</string>
+    <string name="files_failed">Не вдалося прочитати файли: %1$s</string>
+    <string name="files_recording_note">Камера записує. Список усе одно запитується; може бути повільніше.</string>
+    <string name="files_kind_video">Відео</string>
+    <string name="files_kind_photo">Фото</string>
+    <string name="files_kind_other">Файл</string>
+    <string name="files_size_kind">%1$s · %2$s</string>
+    <string name="files_size_date_kind">%1$s · %2$s · %3$s</string>
     <string name="button_reload">Оновити</string>
     <string name="button_sync_clock">Встановити годинник камери за часом телефона</string>
     <string name="button_apply">Застосувати (%1$d)</string>
@@ -95,7 +111,7 @@
     <string name="setting_timelapse_video_resolution">Роздільність таймлапс-відео</string>
     <string name="setting_record_photo_time">Фото під час запису, інтервал</string>
     <string name="setting_emergency_file_backup">Аварійне збереження файлу</string>
-    <string name="setting_warp_enable">Корекція спотворень</string>
+    <string name="setting_warp_enable">Широкий кут / корекція спотворень</string>
     <string name="setting_auto_low_light">Авто слабке освітлення</string>
     <string name="setting_photo_size">Розмір фото</string>
     <string name="setting_photo_quality">Якість фото</string>
@@ -104,7 +120,7 @@
     <string name="setting_precise_cont_time">Тривалість таймлапс-фото</string>
     <string name="setting_burst_capture_number">Швидкість серії</string>
     <string name="setting_precise_selftime">Затримка таймера</string>
-    <string name="setting_meter_mode">Режим замірювання</string>
+    <string name="setting_meter_mode">Режим замірювання експозиції</string>
     <string name="setting_buzzer_volume">Гучність сигналу</string>
     <string name="setting_buzzer_ring">Дзвінок зумера</string>
     <string name="setting_led_mode">Світлові індикатори</string>
@@ -150,4 +166,10 @@
     <string name="opt_rc_button_mode_record_capture">Кнопки запису і фото</string>
     <string name="settings_recording">Камера записує відео. Зупиніть запис, щоб змінити налаштування.</string>
     <string name="settings_stop_recording">Зупинити запис відео</string>
+    <string name="live_orient_left">Вертикально ↺</string>
+    <string name="live_orient_right">Вертикально ↻</string>
+    <string name="live_orient_none">Горизонтально</string>
+    <string name="grid_off">Сітка</string>
+    <string name="grid_3x3">Сітка 3×3</string>
+    <string name="grid_4x4">Сітка 4×4</string>
 </resources>

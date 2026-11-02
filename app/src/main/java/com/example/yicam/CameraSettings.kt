@@ -140,6 +140,11 @@ class CameraSettings(
                     rows.add(SettingRow(key, SettingsCatalog.groupOf(key), options.values, value, locked = !options.settable))
                     local.update { it.copy(rows = sorted(rows)) }
                 }
+                for ((key, values) in SettingsCatalog.BUILT_IN_OPTIONS) {
+                    val current = snapshot.values[key] ?: continue
+                    if (rows.any { it.key == key }) continue
+                    rows.add(SettingRow(key, SettingsCatalog.groupOf(key), values, current, locked = false))
+                }
                 local.update { it.copy(loading = false, rows = sorted(rows)) }
             } catch (e: CancellationException) {
                 throw e
