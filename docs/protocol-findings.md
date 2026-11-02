@@ -46,6 +46,11 @@ The camera Wi-Fi gives the phone 192.168.42.2; the camera is 192.168.42.1, JSON 
 ## Delete command [VERIFY]
 - Not seen on this camera. The 0.4.0 probe screen can send candidate `msg_id 1281` with `param` = absolute path, then `1283` to the parent folder and `1282 -D -S`. Use a sacrificial photo. Record: rval of 1281, the raw reply, and whether the file is gone from the next listing. Do not add 1281 to Cmd.kt until that is confirmed.
 
+## HTTP downloads sleep without the viewfinder (from the PC program, 0.4.1.1) [VERIFY on this camera]
+- Found in the Xiaomi_Yi PC program (deltaflyer4747, `CC.pyw` `FileDownloadThread`): before every file download it sends `{"msg_id":259,"param":"none_force","token":...}`, with the comment "fix for web port by luckylz" (dashcamtalk forum thread "yicam can not visit by http webport any more"). The camera's HTTP server (port 80, Cherokee) stops answering while the camera is not in viewfinder mode; msg_id 259 wakes it.
+- This matches the phone behaviour: listings (msg_id 1282, JSON port 7878) and battery work any time, but an HTTP download from the files screen failed unless a live view had been opened earlier in the session. Once started, the camera stays in viewfinder mode (no stop command is known, see 0.1.0), which is why downloads then kept working.
+- 0.4.1.1 sends msg_id 259 `none_force` before every download and waits 0.8 s. This does not start the phone player. [VERIFY: a fresh app start, files screen, download without ever opening the live view must succeed; note the wake-up answer and the HTTP answer code in the log.]
+
 ## Live view on a phone (log of 2026-10-13, Android 17, Media3 1.8.0)
 - RTSP over TCP: SETUP is answered "461" (unsupported transport) every time. The camera does not do interleaved TCP. UDP (the player's default) works: video 640x480, first picture 0.46-0.74 s after the preview command.
 - The user measured a delay of about 3-4 s (not yet split into camera, Wi-Fi and player parts) and saw stripes of glitches about every 10-15 minutes in poor light only (none on another day): probably UDP packet loss when the encoder makes bigger frames.
