@@ -125,6 +125,8 @@ class LiveViewController(
         // recording on a phone), so a stream is tried without the command. Whether it delivers pictures is not yet known.
         var withoutPreviewCommand = false
         var recordingRetries = 0
+        // vf_start means the preview is back; app_status can still say "record" until the delayed settings refresh.
+        var previewBack = false
         while (true) {
             attempt++
             val startedMs = nowMs()
@@ -134,7 +136,10 @@ class LiveViewController(
                 _state.value = LiveState.Problem(LiveProblem.NOT_CONNECTED, "")
                 return
             }
-            if (session.status.value.appStatus in CameraController.RECORDING_STATUSES) withoutPreviewCommand = true
+            if (!previewBack && session.status.value.appStatus in CameraController.RECORDING_STATUSES) {
+                withoutPreviewCommand = true
+            }
+            previewBack = false
             if (withoutPreviewCommand) {
                 log("recording: starting the stream without the preview command")
             } else {
@@ -234,6 +239,7 @@ class LiveViewController(
                 if (resumed == null) return
                 log("the camera announced vf_start, resuming")
                 withoutPreviewCommand = false
+                previewBack = true
                 recordingRetries = 0
                 attempt = 0
                 delay(config.retryDelayMs)
